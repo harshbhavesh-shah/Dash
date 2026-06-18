@@ -5,6 +5,7 @@
 
 import SwiftUI
 import AppKit
+import LocalAuthentication // --- REQUIRED FOR TOUCH ID SYSTEM ACCESS ---
 
 struct ContentView: View {
     @StateObject private var tabManager = TabManager()
@@ -16,6 +17,8 @@ struct ContentView: View {
     @AppStorage("useDarkMode") private var useDarkMode: Bool = false
     @AppStorage("useMagicMode") private var useMagicMode: Bool = false
     @AppStorage("autoHideSidebar") private var autoHideSidebar: Bool = false
+    // 1. Add this at the top of ContentView with your other storage lines
+    @AppStorage("searchEngine") private var searchEngine: String = "Google"
     
     // Apple native system window context checks
     @Environment(\.isPrivateWindow) private var isPrivateWindow
@@ -24,6 +27,10 @@ struct ContentView: View {
     
     @State private var isEdgeHovered = false
     @State private var hideTask: Task<Void, Never>? = nil
+    
+    // --- NEW: BIOMETRIC SECURITY STATES ---
+    @State private var isPrivateWindowUnlocked = false
+    @State private var biometricErrorMessage: String? = nil
     
     private var isLandingPage: Bool {
         return tabManager.activeTab.url.absoluteString == "about:blank"
@@ -80,9 +87,11 @@ struct ContentView: View {
         }
     }
     
+    // 2. Update the submission function to look like this:
     private func executeAddressBarSubmit() {
         withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) {
-            tabManager.updateActiveUrl(urlString: tabManager.activeTab.urlString)
+            // --- FIXED: Pass the storage token ---
+            tabManager.updateActiveUrl(urlString: tabManager.activeTab.urlString, searchEngine: searchEngine)
         }
         
         if autoHideSidebar && !isSidebarVisible {
@@ -90,6 +99,31 @@ struct ContentView: View {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                 isEdgeHovered = false
             }
+        }
+    }
+    
+    // --- NEW: TRIGGER LOCAL MAC TOUCH ID PROMPT ---
+    private func triggerTouchIDPrompt() {
+        let context = LAContext()
+        var error: NSError?
+        
+        // deviceOwnerAuthentication permits Touch ID fallback to standard Mac user password seamlessly
+        if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) {
+            let reason = "unlock your private Shrome session"
+            
+            context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, authError in
+                DispatchQueue.main.async {
+                    if success {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            self.isPrivateWindowUnlocked = true
+                        }
+                    } else {
+                        self.biometricErrorMessage = authError?.localizedDescription ?? "Authentication failed"
+                    }
+                }
+            }
+        } else {
+            self.biometricErrorMessage = error?.localizedDescription ?? "Biometrics unavailable"
         }
     }
     
@@ -121,10 +155,50 @@ struct ContentView: View {
             
             // LAYER 3: Dynamic Bottom Pill Address Bar
             bottomBarLayer
+            
+            // --- NEW LAYER 4: THE SECURITY LOCK CHECKPOINT SHIELD ---
+            if isPrivateWindow && !isPrivateWindowUnlocked {
+                ZStack {
+                    Color.clear
+                        .background(.ultraThinMaterial)
+                        .ignoresSafeArea()
+                    
+                    VStack(spacing: 16) {
+                        Image(systemName: "lock.shield.fill")
+                            .font(.system(size: 40))
+                            .foregroundColor(.purple)
+                        
+                        Text("Private Session Locked")
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                        
+                        Text("Please authenticate to reveal your tabs.")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                        
+                        Button(action: triggerTouchIDPrompt) {
+                            Label("Unlock with Touch ID", systemImage: "touchid")
+                                .font(.system(size: 12, weight: .medium))
+                                .padding(.horizontal, 6)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.purple)
+                        .keyboardShortcut(.defaultAction)
+                        
+                        if let errorMsg = biometricErrorMessage {
+                            Text(errorMsg)
+                                .font(.system(size: 11))
+                                .foregroundColor(.red)
+                                .padding(.top, 4)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .zIndex(100) // Float on top of everything else
+            }
         }
         .background(WindowHacker(showNativeButtons: shouldUseNativeButtons).frame(width: 0, height: 0))
         .onAppear {
-            // Force strict privacy context mapping on environment birth
             if isPrivateWindow {
                 if tabManager.tabs.isEmpty {
                     tabManager.createNewTab(isPrivate: true)
@@ -133,6 +207,8 @@ struct ContentView: View {
                         tabManager.tabs[i].isPrivate = true
                     }
                 }
+                // Auto-trigger on creation/load window
+                triggerTouchIDPrompt()
             }
         }
         .animation(.spring(response: 0.48, dampingFraction: 0.82), value: isLandingPage)
@@ -148,7 +224,6 @@ struct ContentView: View {
                 // Keyboard Action Targets
                 Button("New Tab") {
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                        // Dynamically scale privacy state based on host window profile
                         tabManager.createNewTab(isPrivate: isPrivateWindow)
                     }
                 }
@@ -174,27 +249,27 @@ struct ContentView: View {
                 }
                 .keyboardShortcut("y", modifiers: .command)
             }
-            // Connect menu items to internal view processes
-            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionNewTab"))) { _ in
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                    tabManager.createNewTab(isPrivate: isPrivateWindow)
-                }
-            }
-            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionCloseTab"))) { _ in
-                tabManager.closeTab(id: tabManager.activeTabId)
-            }
-            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionReload"))) { _ in
-                tabManager.reloadActiveTab()
-            }
-            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionToggleSidebar"))) { _ in
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                    isSidebarVisible.toggle()
-                }
-            }
-            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionShowHistory"))) { _ in
-                showHistoryPanel = true
-            }
             .hidden()
+        }
+        // Menu bar listeners
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionNewTab"))) { _ in
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                tabManager.createNewTab(isPrivate: isPrivateWindow)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionCloseTab"))) { _ in
+            tabManager.closeTab(id: tabManager.activeTabId)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionReload"))) { _ in
+            tabManager.reloadActiveTab()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionToggleSidebar"))) { _ in
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                isSidebarVisible.toggle()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionShowHistory"))) { _ in
+            showHistoryPanel = true
         }
     }
     

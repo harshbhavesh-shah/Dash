@@ -6,7 +6,15 @@
 import SwiftUI
 import Foundation
 import Combine
-import CoreData // --- Added to allow background context thread logs ---
+import CoreData
+
+// --- THE TAB GROUP MODEL STRUCTURE ---
+struct TabGroup: Identifiable, Hashable, Codable {
+    var id: UUID
+    var name: String
+    var icon: String // e.g., "briefcase.fill", "gamecontroller.fill"
+    var colorName: String // To match custom theme accents
+}
 
 struct Tab: Identifiable, Hashable, Codable {
     var id: UUID
@@ -14,6 +22,7 @@ struct Tab: Identifiable, Hashable, Codable {
     var urlString: String
     var title: String
     var isPrivate: Bool
+    var groupId: UUID? = nil // Group attribution tracking
     var reloadTrigger: UUID = UUID()
     
     func hash(into hasher: inout Hasher) {
@@ -29,6 +38,13 @@ class TabManager: ObservableObject {
     @Published var tabs: [Tab] = []
     @Published var activeTabId: UUID = UUID()
     
+    // --- REAL-TIME GROUPS DECK ---
+    @Published var groups: [TabGroup] = [
+        TabGroup(id: UUID(uuidString: "11111111-1111-1111-1111-111111111111")!, name: "Work", icon: "briefcase.fill", colorName: "Sage"),
+        TabGroup(id: UUID(uuidString: "22222222-2222-2222-2222-222222222222")!, name: "Personal", icon: "person.fill", colorName: "Rose"),
+        TabGroup(id: UUID(uuidString: "33222222-2222-2222-2222-222222222222")!, name: "Gaming", icon: "gamecontroller.fill", colorName: "Peach")
+    ]
+    
     init() {
         createNewTab()
     }
@@ -41,13 +57,15 @@ class TabManager: ObservableObject {
         return fallbackTab
     }
     
-    func createNewTab(urlString: String = "about:blank", isPrivate: Bool = false) {
+    // --- CREATION WITH GROUP ROUTING ---
+    func createNewTab(urlString: String = "about:blank", isPrivate: Bool = false, targetGroupId: UUID? = nil) {
         let newTab = Tab(
             id: UUID(),
             url: URL(string: urlString) ?? URL(string: "about:blank")!,
             urlString: urlString,
             title: urlString == "about:blank" ? "New Tab" : urlString,
-            isPrivate: isPrivate
+            isPrivate: isPrivate,
+            groupId: targetGroupId
         )
         
         self.tabs.append(newTab)
@@ -58,7 +76,21 @@ class TabManager: ObservableObject {
         }
     }
     
-    func updateActiveUrl(urlString: String) {
+    // --- ASSIGN ACTIVE TAB TO A GROUP ---
+    func moveActiveTab(to groupId: UUID?) {
+        guard let index = tabs.firstIndex(where: { $0.id == activeTabId }) else { return }
+        tabs[index].groupId = groupId
+        if !tabs[index].isPrivate { saveSession() }
+    }
+    
+    // --- DYNAMIC CUSTOM THEMED GROUP INJECTION ---
+    func createCustomGroup(name: String, icon: String, colorName: String) {
+        let newGroup = TabGroup(id: UUID(), name: name, icon: icon, colorName: colorName)
+        self.groups.append(newGroup)
+    }
+    
+    // --- MULTI-ENGINE URL ENGINE ROUTER ---
+    func updateActiveUrl(urlString: String, searchEngine: String = "Google") {
         guard let index = tabs.firstIndex(where: { $0.id == activeTabId }) else { return }
         
         var formattedString = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -68,7 +100,19 @@ class TabManager: ObservableObject {
                 formattedString = "https://" + formattedString
             } else {
                 let query = formattedString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-                formattedString = "https://www.google.com/search?q=" + query
+                
+                switch searchEngine {
+                case "DuckDuckGo":
+                    formattedString = "https://duckduckgo.com/?q=" + query
+                case "Bing":
+                    formattedString = "https://www.bing.com/search?q=" + query
+                case "Brave Search":
+                    formattedString = "https://search.brave.com/search?q=" + query
+                case "Ecosia":
+                    formattedString = "https://www.ecosia.org/search?q=" + query
+                default: // Google Default Fallback
+                    formattedString = "https://www.google.com/search?q=" + query
+                }
             }
         }
         
@@ -79,13 +123,12 @@ class TabManager: ObservableObject {
             
             if !tabs[index].isPrivate {
                 saveSession()
-                // --- FIXED: NATIVE ROUTING PIPELINE TO PERSISTENCECONTROLLER ---
                 logVisitToCoreData(url: url, title: tabs[index].title)
             }
         }
     }
     
-    // --- FIXED: SELF-CONTAINED CORE DATA RECORDING ROUTINE ---
+    // --- SELF-CONTAINED BACKGROUND CORE DATA LOGGING ROUTINE ---
     private func logVisitToCoreData(url: URL, title: String) {
         let context = PersistenceController.shared.container.viewContext
         context.perform {
@@ -97,7 +140,7 @@ class TabManager: ObservableObject {
             do {
                 try context.save()
             } catch {
-                print("Failed to save cosmic history item: \(error)")
+                print("Failed to record cosmic history event: \(error)")
             }
         }
     }

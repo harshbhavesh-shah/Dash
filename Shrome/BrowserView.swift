@@ -8,9 +8,10 @@ import SwiftUI
 struct BrowserView: View {
     @ObservedObject var tabManager: TabManager
     @Binding var isSidebarVisible: Bool
-    
-    // --- CONNECT THE COUPLING NAMESPACE ---
     var namespace: Namespace.ID
+    
+    // --- ADD THIS LINE ---
+    @AppStorage("searchEngine") private var searchEngine: String = "Google"
     
     var body: some View {
         ZStack {
@@ -24,15 +25,14 @@ struct BrowserView: View {
                             }
                         }
                     ),
-                    namespace: namespace // Pass down safely
+                    namespace: namespace
                 ) { newUrl in
                     withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) {
-                        tabManager.updateActiveUrl(urlString: newUrl)
+                        // --- FIXED: Pass the storage token here too ---
+                        tabManager.updateActiveUrl(urlString: newUrl, searchEngine: searchEngine)
                         isSidebarVisible = false
                     }
                 }
-                // --- FIXED: THIS IS THE GOLDEN LINK ---
-                // This injects the tab manager into the environment so GravityLandingView can read it safely!
                 .environmentObject(tabManager)
                 
             } else {

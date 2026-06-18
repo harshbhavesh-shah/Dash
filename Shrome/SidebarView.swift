@@ -49,6 +49,15 @@ struct SidebarView: View {
                 }
                 .buttonStyle(.plain)
                 
+                // --- COMPACT COLLAPSED DECK ELEMENT ---
+                // Slides neatly below your creation button when the sidebar collapses down
+                if !isVisible {
+                    Spacer().frame(height: 10)
+                    
+                    CollapsedSidebarGroupsDeck(tabManager: tabManager)
+                        .transition(.scale.combined(with: .opacity))
+                }
+                
                 Spacer()
             }
             .frame(width: isVisible ? 80 : 55)
@@ -63,43 +72,62 @@ struct SidebarView: View {
         .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
         .padding(.vertical, 16)
         .padding(.leading, 16)
-        // --- FIXED: Apply the dynamic width frame to the entire container when open ---
+        // Apply the dynamic width frame to the entire container when open
         .frame(width: isVisible ? CGFloat(sidebarWidth) : 55)
     }
     
     private var tabContent: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("TABS")
-                .font(.system(size: 10, weight: .black))
-                .foregroundColor(.primary.opacity(0.4)) // Adaptive
-                .padding(.top, 34)
-                .padding(.leading, 12)
-            
             ScrollView {
-                VStack(spacing: 8) {
-                    ForEach(tabManager.tabs) { tab in
-                        TabRow(tab: tab, isActive: tabManager.activeTabId == tab.id) {
-                            withAnimation(.spring()) {
-                                tabManager.closeTab(id: tab.id)
-                            }
-                        }
-                        .onTapGesture {
-                            withAnimation(.snappy) {
-                                tabManager.activeTabId = tab.id
+                VStack(alignment: .leading, spacing: 24) {
+                    // SECTOR A: UNASSIGNED STANDARD FLAT ACTIVE LIST
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("TABS")
+                            .font(.system(size: 10, weight: .black))
+                            .foregroundColor(.primary.opacity(0.4))
+                            .padding(.leading, 12)
+                        
+                        // Filters out items that are already managed inside group decks
+                        let unassignedTabs = tabManager.tabs.filter { $0.groupId == nil }
+                        
+                        if unassignedTabs.isEmpty {
+                            Text("No unassigned tabs")
+                                .font(.system(size: 11, design: .rounded))
+                                .foregroundColor(.secondary.opacity(0.4))
+                                .padding(.leading, 12)
+                                .padding(.vertical, 4)
+                        } else {
+                            ForEach(unassignedTabs) { tab in
+                                TabRow(tabManager: tabManager, tab: tab, isActive: tabManager.activeTabId == tab.id) {
+                                    withAnimation(.spring()) {
+                                        tabManager.closeTab(id: tab.id)
+                                    }
+                                }
+                                .onTapGesture {
+                                    withAnimation(.snappy) {
+                                        tabManager.activeTabId = tab.id
+                                    }
+                                }
                             }
                         }
                     }
+                    
+                    Divider().opacity(0.1).padding(.horizontal, 10)
+                    
+                    // --- NESTED EXTENDED OPEN GROUPS DECK VIEW ---
+                    OpenSidebarGroupsDeck(tabManager: tabManager)
                 }
                 .padding(.horizontal, 10)
+                .padding(.top, 34)
             }
         }
-        // --- FIXED: Dynamically calculate remaining drawer room minus the control strip ---
         .frame(width: max(0, CGFloat(sidebarWidth) - 80))
     }
 }
 
-// --- YOUR ORIGINAL TAB ROW ---
+// --- TAB ROW ---
 struct TabRow: View {
+    @ObservedObject var tabManager: TabManager
     let tab: Tab
     let isActive: Bool
     var onClose: () -> Void
@@ -154,7 +182,7 @@ struct TabRow: View {
         .background(
             ZStack {
                 if isActive {
-                    Color.primary.opacity(0.1) // Subtly changed for dark mode compatibility
+                    Color.primary.opacity(0.1)
                 } else if isHovered {
                     Color.primary.opacity(0.05)
                 }
@@ -169,6 +197,34 @@ struct TabRow: View {
             else { NSCursor.pop() }
         }
         .contentShape(Rectangle())
+        // --- DYNAMIC CONTEXT ROUTING MATRIX ---
+        .contextMenu {
+            Menu("Move Tab to Group") {
+                Button("Unassigned (General)") {
+                    if let idx = tabManager.tabs.firstIndex(where: { $0.id == tab.id }) {
+                        tabManager.tabs[idx].groupId = nil
+                        tabManager.saveSession()
+                    }
+                }
+                
+                Divider()
+                
+                ForEach(tabManager.groups) { group in
+                    Button(action: {
+                        if let idx = tabManager.tabs.firstIndex(where: { $0.id == tab.id }) {
+                            tabManager.tabs[idx].groupId = group.id
+                            tabManager.saveSession()
+                        }
+                    }) {
+                        Label(group.name, systemImage: group.icon)
+                    }
+                }
+            }
+            
+            Button("Close Tab", role: .destructive) {
+                tabManager.closeTab(id: tab.id)
+            }
+        }
     }
 }
 
