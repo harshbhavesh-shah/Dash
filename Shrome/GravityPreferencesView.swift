@@ -6,7 +6,7 @@
 import SwiftUI
 import Combine
 
-// --- NEW: STARTUP BEHAVIOR ENUM ---
+// --- STARTUP BEHAVIOR ENUM ---
 enum StartupBehavior: String, CaseIterable {
     case leftOff = "Continue where I left off"
     case firstGroupTab = "First tab of a tab group"
@@ -16,10 +16,7 @@ enum StartupBehavior: String, CaseIterable {
 // MARK: - Preferences Data Model
 class GravityPreferences: ObservableObject {
     @AppStorage("homepage") var homepage: String = ""
-    
-    // --- REPLACED: openLastSession is gone, replaced by our new multi-option behavior ---
     @AppStorage("startupBehavior") var startupBehavior: StartupBehavior = .leftOff
-    
     @AppStorage("showTabCount") var showTabCount: Bool = false
 
     @AppStorage("accentColorRed") var accentColorRed: Double = 0.96
@@ -28,8 +25,10 @@ class GravityPreferences: ObservableObject {
     @AppStorage("useDarkMode") var useDarkMode: Bool = false
     @AppStorage("useMagicMode") var useMagicMode: Bool = false
     @AppStorage("sidebarWidth") var sidebarWidth: Double = 260
-    
     @AppStorage("autoHideSidebar") var autoHideSidebar: Bool = false
+    
+    // --- NEW: Master toggle for address bar glass tinting ---
+    @AppStorage("enableAddressBarTint") var enableAddressBarTint: Bool = true
 
     @AppStorage("searchEngine") var searchEngine: String = "Google"
     @AppStorage("searchSuggestions") var searchSuggestions: Bool = true
@@ -182,7 +181,7 @@ struct PrefsCard<Content: View>: View {
     }
 }
 
-// MARK: - Single Prefs Row
+// MARK: - Prefs Row
 struct PrefsRow<Content: View>: View {
     let label: String
     var sublabel: String? = nil
@@ -225,14 +224,11 @@ struct GeneralSection: View {
         PrefsSectionHeader(title: "General")
 
         PrefsCard {
-            PrefsRow(label: "Homepage", sublabel: "Leave blank to use the Gravity landing page") {
-                TextField("https://", text: $prefs.homepage)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 180)
-                    .font(.system(size: 12))
-            }
+            TextField("https://", text: $prefs.homepage)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 180)
+                .font(.system(size: 12))
 
-            // --- NEW: STARTUP DROPDOWN ---
             PrefsRow(label: "On startup", sublabel: "Choose how Gravity boots up") {
                 Picker("", selection: $prefs.startupBehavior) {
                     ForEach(StartupBehavior.allCases, id: \.self) { behavior in
@@ -292,8 +288,16 @@ struct AppearanceSection: View {
                     .toggleStyle(.switch)
                     .labelsHidden()
             }
+            
             PrefsRow(label: "Magic Mode", sublabel: "Enable deep-space starry background and aurora gradients") {
                 Toggle("", isOn: $prefs.useMagicMode)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+            }
+
+            // --- FIXED/NEW: Dynamic Glass Tint Control ---
+            PrefsRow(label: "Address bar liquid tint", sublabel: "Infuse custom accent profiles into the native glass layer") {
+                Toggle("", isOn: $prefs.enableAddressBarTint)
                     .toggleStyle(.switch)
                     .labelsHidden()
             }
@@ -331,7 +335,6 @@ struct AppearanceSection: View {
 // MARK: - Search Section
 struct SearchSection: View {
     @ObservedObject var prefs: GravityPreferences
-
     private let engines = ["Google", "DuckDuckGo", "Bing", "Brave Search", "Ecosia"]
 
     var body: some View {

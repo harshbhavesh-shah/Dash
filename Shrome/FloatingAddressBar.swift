@@ -7,8 +7,11 @@ import SwiftUI
 
 struct FloatingAddressBar: View {
     @Binding var urlString: String
-    @ObservedObject var tabManager: TabManager // NEW: Need access to the tab state
+    @ObservedObject var tabManager: TabManager
     var onSubmit: () -> Void
+    
+    // Listen to the preference toggle we just created
+    @AppStorage("enableAddressBarTint") private var enableAddressBarTint: Bool = true
     
     @AppStorage("accentColorRed") private var r: Double = 0.96
     @AppStorage("accentColorGreen") private var g: Double = 0.55
@@ -48,34 +51,21 @@ struct FloatingAddressBar: View {
         .padding(.horizontal, 25)
         .padding(.vertical, 16)
         .frame(width: 550)
-        .background(
-            ZStack {
-                LiquidGlass()
-                
-                // The Privacy Tint
-                if isPrivate {
-                    Color.purple.opacity(0.08)
-                }
-
-                // Polished Specular Rim with Dynamic Color
-                Capsule()
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                .white.opacity(0.7),
-                                isPrivate ? .purple.opacity(0.5) : accentColor.opacity(0.35),
-                                .clear,
-                                isPrivate ? .indigo.opacity(0.3) : accentColor.opacity(0.15)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 0.5
+        // --- DYNAMIC LIQUID GLASS CONTROLLER ---
+        .background {
+            if enableAddressBarTint {
+                // If tint is enabled, pass our ultra-faint calibrated profile into the native layer
+                Color.clear
+                    .glassEffect(
+                        .regular.tint(isPrivate ? Color.purple.opacity(0.12) : accentColor.opacity(0.15)),
+                        in: Capsule()
                     )
+            } else {
+                // If turned off, give us pure, crystalline unobstructed Apple system glass
+                Color.clear
+                    .glassEffect(in: Capsule())
             }
-        )
-        .clipShape(Capsule())
-        // Purple "Privacy Glow" shadow
-        .shadow(color: isPrivate ? .purple.opacity(0.12) : .black.opacity(0.06), radius: 10, x: 0, y: 5)
+        }
+        .shadow(color: isPrivate ? .purple.opacity(0.12) : .black.opacity(0.08), radius: 15, x: 0, y: 8)
     }
 }
