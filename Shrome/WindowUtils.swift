@@ -21,11 +21,14 @@ struct WebView: NSViewRepresentable {
     func makeNSView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         
+        // --- SAFE FIXED COOKIE DATA STORE ---
         if tab.isPrivate {
             config.websiteDataStore = .nonPersistent()
         } else {
+            // Revert to the native safe global storage pipeline
             config.websiteDataStore = .default()
         }
+        
         config.preferences.isElementFullscreenEnabled = true
         
         let blockTrackers = UserDefaults.standard.object(forKey: "blockTrackers") as? Bool ?? true
