@@ -4,56 +4,40 @@
 //
 
 import SwiftUI
-import AppKit
 
-// --- THE QUIT INTERCEPTOR ---
-class AppDelegate: NSObject, NSApplicationDelegate {
-    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        let alert = NSAlert()
-        alert.messageText = "Abandon Ship?"
-        alert.informativeText = "Are you sure you want to quit Shrome? Your cosmic journey will be paused."
-        alert.addButton(withTitle: "Quit")
-        alert.addButton(withTitle: "Cancel")
-        alert.alertStyle = .warning
-        
-        let response = alert.runModal()
-        
-        if response == .alertFirstButtonReturn {
-            NotificationCenter.default.post(name: .saveBrowserSession, object: nil)
-            return .terminateNow
-        } else {
-            return .terminateCancel
-        }
+// --- REGISTERING CUSTOM PRIVACY VALUES IN THE SWIFTUI ENVIRONMENT SYSTEM ---
+private struct PrivateWindowKey: EnvironmentKey {
+    static let defaultValue: Bool = false
+}
+
+extension EnvironmentValues {
+    var isPrivateWindow: Bool {
+        get { self[PrivateWindowKey.self] }
+        set { self[PrivateWindowKey.self] = newValue }
     }
 }
 
 @main
 struct ShromeApp: App {
+    // --- FIXED: Linked straight to your true structural PersistenceController class ---
     let persistenceController = PersistenceController.shared
-    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    
-    init() {
-        _ = AdBlocker.shared
-    }
-    
+
     var body: some Scene {
+        // SCENE 1: STANDARD USER PROFILE BROWSER SPACE
         WindowGroup(id: "ShromeWindow") {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .environment(\.isPrivateWindow, false)
         }
-        .windowStyle(.hiddenTitleBar)
+        .commands {
+            SidebarCommands()
+        }
 
+        // SCENE 2: COMPLETELY ISOLATED PRIVATE WINDOW SCENE CONTAINER
         WindowGroup(id: "PrivateShromeWindow") {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .environment(\.isPrivateWindow, true)
-        }
-        .windowStyle(.hiddenTitleBar)
-        
-        Settings {
-            GravityPreferencesView()
-                // --- FIXED: Inject view context here to protect the history sheets from crashing ---
-                .environment(\.managedObjectContext, persistenceController.container.viewContext)
         }
     }
 }

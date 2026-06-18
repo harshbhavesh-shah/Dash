@@ -11,13 +11,13 @@ struct ContentView: View {
     @State private var isSidebarVisible = false
     @State private var showHistoryPanel = false
     
-    // --- THE GEOMETRIC MORPHING NAMESPACE ---
     @Namespace private var addressBarNamespace
     
     @AppStorage("useDarkMode") private var useDarkMode: Bool = false
     @AppStorage("useMagicMode") private var useMagicMode: Bool = false
     @AppStorage("autoHideSidebar") private var autoHideSidebar: Bool = false
     
+    // Apple native system window context checks
     @Environment(\.isPrivateWindow) private var isPrivateWindow
     @Environment(\.openWindow) private var openWindow
     @Environment(\.managedObjectContext) private var viewContext
@@ -81,7 +81,6 @@ struct ContentView: View {
     }
     
     private func executeAddressBarSubmit() {
-        // Wrap state transitions in a responsive spring animation context
         withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) {
             tabManager.updateActiveUrl(urlString: tabManager.activeTab.urlString)
         }
@@ -96,11 +95,11 @@ struct ContentView: View {
     
     var body: some View {
         ZStack(alignment: .leading) {
-            // LAYER 1: BROWSER VIEW FRAME MATRIX
+            // LAYER 1: Core Web Render view matrices
             BrowserView(tabManager: tabManager, isSidebarVisible: browserSidebarBinding, namespace: addressBarNamespace)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // LAYER 2: THE SIDEBAR CONTAINER
+            // LAYER 2: Sliding Sidebar Management View
             SidebarView(tabManager: tabManager, isVisible: browserSidebarBinding)
                 .offset(x: sidebarOffset)
                 .onHover { hovering in
@@ -120,16 +119,22 @@ struct ContentView: View {
                     .zIndex(11)
             }
             
-            // LAYER 3: FIXED HIGH-FIDELITY BOTTOM INTERACTIVE BAR
+            // LAYER 3: Dynamic Bottom Pill Address Bar
             bottomBarLayer
         }
         .background(WindowHacker(showNativeButtons: shouldUseNativeButtons).frame(width: 0, height: 0))
         .onAppear {
-            if isPrivateWindow && tabManager.tabs.count == 1 {
-                tabManager.tabs[0].isPrivate = true
+            // Force strict privacy context mapping on environment birth
+            if isPrivateWindow {
+                if tabManager.tabs.isEmpty {
+                    tabManager.createNewTab(isPrivate: true)
+                } else {
+                    for i in 0..<tabManager.tabs.count {
+                        tabManager.tabs[i].isPrivate = true
+                    }
+                }
             }
         }
-        // Harmonize landing state flips globally
         .animation(.spring(response: 0.48, dampingFraction: 0.82), value: isLandingPage)
         .preferredColorScheme((useDarkMode || useMagicMode || tabManager.activeTab.isPrivate) ? .dark : .light)
         .sheet(isPresented: $showHistoryPanel) {
@@ -140,9 +145,11 @@ struct ContentView: View {
         }
         .background {
             Group {
+                // Keyboard Action Targets
                 Button("New Tab") {
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                        tabManager.createNewTab()
+                        // Dynamically scale privacy state based on host window profile
+                        tabManager.createNewTab(isPrivate: isPrivateWindow)
                     }
                 }
                 .keyboardShortcut("t", modifiers: .command)
@@ -181,7 +188,6 @@ struct ContentView: View {
                     tabManager: tabManager,
                     onSubmit: executeAddressBarSubmit
                 )
-                // Link the bottom bar structure to our core coordinate space path
                 .matchedGeometryEffect(id: "sharedAddressBarKey", in: addressBarNamespace)
                 .padding(.bottom, 40)
                 .transition(.asymmetric(insertion: .identity, removal: .opacity))

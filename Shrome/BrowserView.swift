@@ -31,6 +31,10 @@ struct BrowserView: View {
                         isSidebarVisible = false
                     }
                 }
+                // --- FIXED: THIS IS THE GOLDEN LINK ---
+                // This injects the tab manager into the environment so GravityLandingView can read it safely!
+                .environmentObject(tabManager)
+                
             } else {
                 WebView(tab: Binding(
                     get: { tabManager.activeTab },
