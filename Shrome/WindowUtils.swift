@@ -7,11 +7,9 @@ import SwiftUI
 import AppKit
 import WebKit
 
-
 extension Notification.Name {
     static let openNewTabFromLink = Notification.Name("openNewTabFromLink")
 }
-
 
 struct WebView: NSViewRepresentable {
     @Binding var tab: Tab
@@ -23,19 +21,14 @@ struct WebView: NSViewRepresentable {
     func makeNSView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         
-        // 1. Stealth Mode Check
-        // 1. Stealth Mode & Cookie Check
         if tab.isPrivate {
-            config.websiteDataStore = .nonPersistent() // Burner phone mode
+            config.websiteDataStore = .nonPersistent()
         } else {
-            config.websiteDataStore = .default() // Permanent cookie jar (Stay logged in!)
+            config.websiteDataStore = .default()
         }
-        // 2. Unlock Fullscreen Video Players
         config.preferences.isElementFullscreenEnabled = true
         
-        // 3. Arm Deflector Shields & Snipers
         let blockTrackers = UserDefaults.standard.object(forKey: "blockTrackers") as? Bool ?? true
-        
         if blockTrackers {
             if let ruleList = AdBlocker.shared.ruleList {
                 config.userContentController.add(ruleList)
@@ -46,14 +39,11 @@ struct WebView: NSViewRepresentable {
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.allowsBackForwardNavigationGestures = true
         
-        // 4. Attach the Brains
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
         
-        // 5. Masquerade as Modern Safari (Fixes the Google Images bug)
         webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15"
         
-        // 6. The Single Page Application (SPA) Observer
         let coordinator = context.coordinator
         coordinator.urlObservation = webView.observe(\.url, options: [.new]) { [weak coordinator] view, _ in
             if let newUrl = view.url {
@@ -76,14 +66,12 @@ struct WebView: NSViewRepresentable {
         } else if nsView.url == nil && tab.url.absoluteString != "about:blank" {
             let request = URLRequest(url: tab.url)
             nsView.load(request)
-        }
-        else if context.coordinator.lastReloadTrigger != tab.reloadTrigger {
+        } else if context.coordinator.lastReloadTrigger != tab.reloadTrigger {
             nsView.reload()
             context.coordinator.lastReloadTrigger = tab.reloadTrigger
         }
     }
     
-    // --- THE NEURAL NETWORK (COORDINATOR) ---
     class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         var parent: WebView
         var lastReloadTrigger: UUID
@@ -106,7 +94,6 @@ struct WebView: NSViewRepresentable {
             }
         }
         
-        // 1. THE NEW TAB INTERCEPTOR
         func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
             if navigationAction.targetFrame == nil {
                 if let url = navigationAction.request.url {
@@ -120,7 +107,6 @@ struct WebView: NSViewRepresentable {
     }
 }
 
-// --- THE WINDOW CONTROLS HACKER ---
 struct WindowHacker: NSViewRepresentable {
     var showNativeButtons: Bool
     
@@ -136,17 +122,14 @@ struct WindowHacker: NSViewRepresentable {
     
     private func updateWindow(_ window: NSWindow?) {
         guard let window = window else { return }
-        
         window.titlebarAppearsTransparent = true
         window.isMovableByWindowBackground = true
-        
         window.standardWindowButton(.closeButton)?.isHidden = !showNativeButtons
         window.standardWindowButton(.miniaturizeButton)?.isHidden = !showNativeButtons
         window.standardWindowButton(.zoomButton)?.isHidden = !showNativeButtons
     }
 }
 
-// --- THE LIQUID GLASS MATERIAL ---
 struct LiquidGlass: NSViewRepresentable {
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
@@ -155,6 +138,5 @@ struct LiquidGlass: NSViewRepresentable {
         view.state = .active
         return view
     }
-    
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }

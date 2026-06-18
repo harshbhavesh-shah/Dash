@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import CoreData
 
 extension Notification.Name {
     static let saveBrowserSession = Notification.Name("saveBrowserSession")
@@ -66,16 +67,12 @@ class TabManager: ObservableObject {
     }
     
     private func loadSession() -> Bool {
-        // Read the StartupBehavior enum from AppStorage (Defaults to Continue where I left off)
         let behaviorString = UserDefaults.standard.string(forKey: "startupBehavior") ?? "Continue where I left off"
         
-        // Option 3: Always start at the new tab page
         if behaviorString == "Start at the new tab page" {
-            // Returning false skips loading entirely, forcing a clean slate with a single "about:blank" tab.
             return false
         }
         
-        // Load the saved data
         guard let tabsData = UserDefaults.standard.data(forKey: "savedTabs"),
               let decodedTabs = try? JSONDecoder().decode([Tab].self, from: tabsData),
               !decodedTabs.isEmpty else {
@@ -89,24 +86,18 @@ class TabManager: ObservableObject {
             self.groups = decodedGroups
         }
         
-        // --- FIXED: Removed the secondary duplicated logic block that re-decoded everything ---
-        // Option 1 & 2: Deciding which tab should be active right now
         if behaviorString == "First tab of a tab group" {
-            // Find the first tab that actually has a groupId
             if let firstGroupedTab = decodedTabs.first(where: { $0.groupId != nil }) {
                 self.activeTabId = firstGroupedTab.id
             } else {
-                // Fallback if they deleted all their groups
                 self.activeTabId = decodedTabs.first!.id
             }
         } else {
-            // Default Option: Continue EXACTLY where I left off
             if let activeIdString = UserDefaults.standard.string(forKey: "activeTabId"),
                let activeId = UUID(uuidString: activeIdString),
                decodedTabs.contains(where: { $0.id == activeId }) {
                 self.activeTabId = activeId
             } else {
-                // Fallback if active tab ID lost tracking
                 self.activeTabId = decodedTabs.first!.id
             }
         }
@@ -132,21 +123,15 @@ class TabManager: ObservableObject {
 
     func moveTab(_ tabId: UUID, to groupId: UUID?) {
         guard let index = tabs.firstIndex(where: { $0.id == tabId }) else { return }
-        
-        // Don't do anything if it's already in the target group
         if tabs[index].groupId == groupId { return }
         
         tabs[index].groupId = groupId
-        
-        // If we dropped it into a group, pop the group open so we can see it
         if let gId = groupId, let gIndex = groups.firstIndex(where: { $0.id == gId }) {
             groups[gIndex].isExpanded = true
         }
-        
         cleanupEmptyGroups()
     }
     
-    // Auto-delete folders if they become empty
     private func cleanupEmptyGroups() {
         groups.removeAll { group in
             !tabs.contains(where: { $0.groupId == group.id })
@@ -173,6 +158,32 @@ class TabManager: ObservableObject {
         if let newUrl = URL(string: formatted) {
             tabs[index].url = newUrl
             tabs[index].urlString = formatted
+            
+            // Log history on a verified background thread
+            recordHistoryItem(title: newUrl.host ?? cleanedInput, urlString: formatted)
+        }
+    }
+    
+    private func recordHistoryItem(title: String, urlString: String) {
+        // --- FIXED: Read as optional object casting to guarantee a 'true' fallback baseline ---
+        let saveHistory = UserDefaults.standard.object(forKey: "saveHistory") as? Bool ?? true
+        
+        guard saveHistory && !activeTab.isPrivate else { return }
+        
+        let context = PersistenceController.shared.container.viewContext
+        context.perform {
+            let newItem = HistoryItem(context: context)
+            newItem.id = UUID()
+            newItem.title = title
+            newItem.url = urlString
+            newItem.timestamp = Date()
+            
+            do {
+                try context.save()
+                print("Cosmic data warehouse updated: \(title)")
+            } catch {
+                print("Core Data logging exception: \(error)")
+            }
         }
     }
     

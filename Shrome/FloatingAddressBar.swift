@@ -10,16 +10,12 @@ struct FloatingAddressBar: View {
     @ObservedObject var tabManager: TabManager
     var onSubmit: () -> Void
     
-    // Listen to the preference toggle we just created
     @AppStorage("enableAddressBarTint") private var enableAddressBarTint: Bool = true
-    
     @AppStorage("accentColorRed") private var r: Double = 0.96
     @AppStorage("accentColorGreen") private var g: Double = 0.55
     @AppStorage("accentColorBlue") private var b: Double = 0.72
     
     var accentColor: Color { Color(red: r, green: g, blue: b) }
-    
-    // Check if we are in stealth mode
     private var isPrivate: Bool { tabManager.activeTab.isPrivate }
 
     var body: some View {
@@ -51,21 +47,19 @@ struct FloatingAddressBar: View {
         .padding(.horizontal, 25)
         .padding(.vertical, 16)
         .frame(width: 550)
-        // --- DYNAMIC LIQUID GLASS CONTROLLER ---
+        // --- FIXED: Permanent Native Liquid Glass implementation ---
         .background {
             if enableAddressBarTint {
-                // If tint is enabled, pass our ultra-faint calibrated profile into the native layer
                 Color.clear
                     .glassEffect(
                         .regular.tint(isPrivate ? Color.purple.opacity(0.12) : accentColor.opacity(0.15)),
                         in: Capsule()
                     )
             } else {
-                // If turned off, give us pure, crystalline unobstructed Apple system glass
                 Color.clear
                     .glassEffect(in: Capsule())
             }
         }
-        .shadow(color: isPrivate ? .purple.opacity(0.12) : .black.opacity(0.08), radius: 15, x: 0, y: 8)
+        .shadow(color: isPrivate ? .purple.opacity(0.1) : .black.opacity(0.06), radius: 15, x: 0, y: 8)
     }
 }

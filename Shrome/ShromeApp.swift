@@ -6,7 +6,7 @@
 import SwiftUI
 import AppKit
 
-// --- NEW: THE QUIT INTERCEPTOR ---
+// --- THE QUIT INTERCEPTOR ---
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         let alert = NSAlert()
@@ -16,15 +16,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         alert.addButton(withTitle: "Cancel")
         alert.alertStyle = .warning
         
-        // Pop the alert!
         let response = alert.runModal()
         
         if response == .alertFirstButtonReturn {
-            // User confirmed. Tell TabManager to pack up the data.
             NotificationCenter.default.post(name: .saveBrowserSession, object: nil)
             return .terminateNow
         } else {
-            // User cancelled. Keep the engines running.
             return .terminateCancel
         }
     }
@@ -36,9 +33,9 @@ struct ShromeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     init() {
-        // Spin up the compiler engine the exact millisecond the app launches
         _ = AdBlocker.shared
     }
+    
     var body: some Scene {
         WindowGroup(id: "ShromeWindow") {
             ContentView()
@@ -55,6 +52,8 @@ struct ShromeApp: App {
         
         Settings {
             GravityPreferencesView()
+                // --- FIXED: Inject view context here to protect the history sheets from crashing ---
+                .environment(\.managedObjectContext, persistenceController.container.viewContext)
         }
     }
 }

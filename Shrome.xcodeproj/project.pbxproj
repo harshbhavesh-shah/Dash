@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		D8E5A3492FE4521400934330 /* ShromeDataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = D8E5A3472FE4521400934330 /* ShromeDataModel.xcdatamodeld */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		D8404ED52F5AE1C800DA54D4 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +31,7 @@
 		D8404EC22F5AE1C600DA54D4 /* Shrome.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Shrome.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D8404ED42F5AE1C800DA54D4 /* ShromeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ShromeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D8404EDE2F5AE1C800DA54D4 /* ShromeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ShromeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D8E5A3482FE4521400934330 /* ShromeDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = ShromeDataModel.xcdatamodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -75,6 +80,7 @@
 		D8404EB92F5AE1C600DA54D4 = {
 			isa = PBXGroup;
 			children = (
+				D8E5A3472FE4521400934330 /* ShromeDataModel.xcdatamodeld */,
 				D8404EC42F5AE1C600DA54D4 /* Shrome */,
 				D8404ED72F5AE1C800DA54D4 /* ShromeTests */,
 				D8404EE12F5AE1C800DA54D4 /* ShromeUITests */,
@@ -236,6 +242,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D8E5A3492FE4521400934330 /* ShromeDataModel.xcdatamodeld in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -613,6 +620,19 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCVersionGroup section */
+		D8E5A3472FE4521400934330 /* ShromeDataModel.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				D8E5A3482FE4521400934330 /* ShromeDataModel.xcdatamodel */,
+			);
+			currentVersion = D8E5A3482FE4521400934330 /* ShromeDataModel.xcdatamodel */;
+			path = ShromeDataModel.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
 	};
 	rootObject = D8404EBA2F5AE1C600DA54D4 /* Project object */;
 }
