@@ -19,15 +19,18 @@ class GravityPreferences: ObservableObject {
     @AppStorage("startupBehavior") var startupBehavior: StartupBehavior = .leftOff
     @AppStorage("showTabCount") var showTabCount: Bool = false
 
+    // Syncing Red, Green, Blue fallbacks for backwards compatibility
     @AppStorage("accentColorRed") var accentColorRed: Double = 0.96
     @AppStorage("accentColorGreen") var accentColorGreen: Double = 0.55
     @AppStorage("accentColorBlue") var accentColorBlue: Double = 0.72
+    
+    // --- FIXED: Single theme selector pointing directly to our custom matrix ---
+    @AppStorage("selectedShromeTheme") var selectedTheme: ShromeTheme = .cosmicPastel
+    
     @AppStorage("useDarkMode") var useDarkMode: Bool = false
     @AppStorage("useMagicMode") var useMagicMode: Bool = false
     @AppStorage("sidebarWidth") var sidebarWidth: Double = 260
     @AppStorage("autoHideSidebar") var autoHideSidebar: Bool = false
-    
-    // --- NEW: Master toggle for address bar glass tinting ---
     @AppStorage("enableAddressBarTint") var enableAddressBarTint: Bool = true
 
     @AppStorage("searchEngine") var searchEngine: String = "Google"
@@ -38,7 +41,18 @@ class GravityPreferences: ObservableObject {
     @AppStorage("saveHistory") var saveHistory: Bool = true
 
     var accentColor: Color {
-        Color(red: accentColorRed, green: accentColorGreen, blue: accentColorBlue)
+        selectedTheme.accentColor
+    }
+    
+    func updateTheme(to theme: ShromeTheme) {
+        selectedTheme = theme
+        
+        // Split colors down into old standard RGB memory layers so secondary panels don't break
+        if let components = NSColor(theme.accentColor).usingColorSpace(.sRGB) {
+            accentColorRed = Double(components.redComponent)
+            accentColorGreen = Double(components.greenComponent)
+            accentColorBlue = Double(components.blueComponent)
+        }
     }
 }
 
@@ -94,7 +108,7 @@ struct GravityPreferencesView: View {
                 Spacer()
             }
             .frame(width: 180)
-            .background(sidebarColor.opacity(0.15))
+            .background(sidebarColor.opacity(0.12)) // Soft material styling variation
 
             Divider()
                 .opacity(0.15)
@@ -114,7 +128,7 @@ struct GravityPreferencesView: View {
             }
             .background(Color(NSColor.windowBackgroundColor))
         }
-        .frame(width: 620, height: 440)
+        .frame(width: 650, height: 480) // Slightly enlarged for premium layout grid breathing room
         .preferredColorScheme(prefs.useDarkMode ? .dark : .light)
     }
 }
@@ -142,7 +156,7 @@ struct SidebarRow: View {
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? accentColor.opacity(0.2) : Color.clear)
+                .fill(isSelected ? accentColor.opacity(0.15) : Color.clear)
                 .padding(.horizontal, 6)
         )
         .contentShape(Rectangle())
@@ -224,12 +238,14 @@ struct GeneralSection: View {
         PrefsSectionHeader(title: "General")
 
         PrefsCard {
-            TextField("https://", text: $prefs.homepage)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 180)
-                .font(.system(size: 12))
+            PrefsRow(label: "Homepage", sublabel: "Set your default launch portal") {
+                TextField("https://", text: $prefs.homepage)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 180)
+                    .font(.system(size: 12))
+            }
 
-            PrefsRow(label: "On startup", sublabel: "Choose how Gravity boots up") {
+            PrefsRow(label: "On startup", sublabel: "Choose how Shrome boots up") {
                 Picker("", selection: $prefs.startupBehavior) {
                     ForEach(StartupBehavior.allCases, id: \.self) { behavior in
                         Text(behavior.rawValue).tag(behavior)
@@ -252,38 +268,62 @@ struct GeneralSection: View {
 // MARK: - Appearance Section
 struct AppearanceSection: View {
     @ObservedObject var prefs: GravityPreferences
+    
+    private let themeColumns = [
+        GridItem(.adaptive(minimum: 65, maximum: 80), spacing: 12)
+    ]
 
     var body: some View {
         PrefsSectionHeader(title: "Appearance")
 
-        PrefsCard {
-            PrefsRow(label: "Sidebar accent color", sublabel: "Controls the sidebar and search glow tint") {
-                HStack(spacing: 12) {
-                    ForEach(colorPresets, id: \.0) { name, r, g, b in
+        Text("Liquid Glass Color Themes")
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundColor(.secondary)
+            .padding(.bottom, 8)
+            
+        LazyVGrid(columns: themeColumns, spacing: 14) {
+            ForEach(ShromeTheme.allCases) { theme in
+                VStack(spacing: 6) {
+                    ZStack {
                         Circle()
-                            .fill(Color(red: r, green: g, blue: b))
-                            .frame(width: 24, height: 24)
-                            .overlay(Circle().stroke(Color.primary.opacity(0.15), lineWidth: 1))
-                            .background(
-                                Circle()
-                                    .stroke(Color(red: r, green: g, blue: b), lineWidth: (prefs.accentColorRed == r && prefs.accentColorGreen == g && prefs.accentColorBlue == b) ? 3 : 0)
-                                    .frame(width: 32, height: 32)
-                                    .opacity(0.5)
+                            .fill(
+                                LinearGradient(
+                                    colors: theme.gradientColors,
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
-                            .scaleEffect((prefs.accentColorRed == r && prefs.accentColorGreen == g && prefs.accentColorBlue == b) ? 1.1 : 1.0)
-                            .onTapGesture {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                                    prefs.accentColorRed = r
-                                    prefs.accentColorGreen = g
-                                    prefs.accentColorBlue = b
-                                }
-                            }
+                            .frame(width: 36, height: 36)
+                            .shadow(color: theme.accentColor.opacity(0.2), radius: 4, x: 0, y: 2)
+                        
+                        if prefs.selectedTheme == theme {
+                            Circle()
+                                .stroke(Color.primary, lineWidth: 2)
+                                .frame(width: 44, height: 44)
+                        }
+                    }
+                    
+                    Text(theme.rawValue)
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundColor(prefs.selectedTheme == theme ? .primary : .secondary)
+                        .lineLimit(1)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                        prefs.updateTheme(to: theme)
                     }
                 }
-                .padding(.vertical, 4)
             }
+        }
+        .padding(14)
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(12)
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.06), lineWidth: 1))
+        .padding(.bottom, 20)
 
-            PrefsRow(label: "Dark mode", sublabel: "Switch Gravity to a dark appearance") {
+        PrefsCard {
+            PrefsRow(label: "Dark mode", sublabel: "Switch Shrome to a dark appearance") {
                 Toggle("", isOn: $prefs.useDarkMode)
                     .toggleStyle(.switch)
                     .labelsHidden()
@@ -295,7 +335,6 @@ struct AppearanceSection: View {
                     .labelsHidden()
             }
 
-            // --- FIXED/NEW: Dynamic Glass Tint Control ---
             PrefsRow(label: "Address bar liquid tint", sublabel: "Infuse custom accent profiles into the native glass layer") {
                 Toggle("", isOn: $prefs.enableAddressBarTint)
                     .toggleStyle(.switch)
@@ -319,16 +358,6 @@ struct AppearanceSection: View {
                     .labelsHidden()
             }
         }
-    }
-
-    private var colorPresets: [(String, Double, Double, Double)] {
-        [
-            ("Rose",    0.96, 0.55, 0.72),
-            ("Lilac",   0.75, 0.35, 1.0),
-            ("Sky",     0.2,  0.75, 1.0),
-            ("Sage",    0.3,  0.85, 0.5),
-            ("Peach",   1.0,  0.55, 0.25),
-        ]
     }
 }
 
@@ -381,7 +410,7 @@ struct PrivacySection: View {
                     .labelsHidden()
             }
 
-            PrefsRow(label: "Clear history & cache on quit", sublabel: "All data will be wiped when Gravity closes", isLast: true) {
+            PrefsRow(label: "Clear history & cache on quit", sublabel: "All data will be wiped when Shrome closes", isLast: true) {
                 Toggle("", isOn: $prefs.clearOnQuit)
                     .toggleStyle(.switch)
                     .labelsHidden()

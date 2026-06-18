@@ -19,7 +19,7 @@ extension EnvironmentValues {
 
 @main
 struct ShromeApp: App {
-    // --- FIXED: Linked straight to your true structural PersistenceController class ---
+    // Shared Core Data persistent controller instance
     let persistenceController = PersistenceController.shared
 
     var body: some Scene {
@@ -38,6 +38,12 @@ struct ShromeApp: App {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .environment(\.isPrivateWindow, true)
+        }
+        
+        // --- FIXED: THE NATIVE PREFERENCES ROUTING BLOCK ---
+        // This tells macOS to bind your custom view to the standard App Menu and Cmd + , keybind!
+        Settings {
+            GravityPreferencesView()
         }
     }
 }
