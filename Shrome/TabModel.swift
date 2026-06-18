@@ -65,52 +65,23 @@ class TabManager: ObservableObject {
         UserDefaults.standard.set(activeTabId.uuidString, forKey: "activeTabId")
     }
     
-        private func loadSession() -> Bool {
-            // Read the new StartupBehavior enum from AppStorage (Defaults to Continue where I left off)
-            let behaviorString = UserDefaults.standard.string(forKey: "startupBehavior") ?? "Continue where I left off"
-            
-            // Option 3: Always start at the new tab page
-            if behaviorString == "Start at the new tab page" {
-                // Returning false skips loading entirely, forcing a clean slate with a single "about:blank" tab.
-                return false
-            }
-            
-            // Load the saved data
-            guard let tabsData = UserDefaults.standard.data(forKey: "savedTabs"),
-                  let decodedTabs = try? JSONDecoder().decode([Tab].self, from: tabsData),
-                  !decodedTabs.isEmpty else {
-                return false
-            }
-            
-            self.tabs = decodedTabs
-            
-            if let groupsData = UserDefaults.standard.data(forKey: "savedGroups"),
-               let decodedGroups = try? JSONDecoder().decode([TabGroup].self, from: groupsData) {
-                self.groups = decodedGroups
-            }
-            
-            // Option 1 & 2: Deciding which tab should be active right now
-            if behaviorString == "First tab of a tab group" {
-                // Find the first tab that actually has a groupId
-                if let firstGroupedTab = decodedTabs.first(where: { $0.groupId != nil }) {
-                    self.activeTabId = firstGroupedTab.id
-                } else {
-                    // Fallback if they deleted all their groups
-                    self.activeTabId = decodedTabs.first!.id
-                }
-            } else {
-                // Default Option: Continue EXACTLY where I left off
-                if let activeIdString = UserDefaults.standard.string(forKey: "activeTabId"),
-                   let activeId = UUID(uuidString: activeIdString),
-                   decodedTabs.contains(where: { $0.id == activeId }) {
-                    self.activeTabId = activeId
-                } else {
-                    self.activeTabId = decodedTabs.first!.id
-                }
-                return true
-            }
-            
-            
+    private func loadSession() -> Bool {
+        // Read the StartupBehavior enum from AppStorage (Defaults to Continue where I left off)
+        let behaviorString = UserDefaults.standard.string(forKey: "startupBehavior") ?? "Continue where I left off"
+        
+        // Option 3: Always start at the new tab page
+        if behaviorString == "Start at the new tab page" {
+            // Returning false skips loading entirely, forcing a clean slate with a single "about:blank" tab.
+            return false
+        }
+        
+        // Load the saved data
+        guard let tabsData = UserDefaults.standard.data(forKey: "savedTabs"),
+              let decodedTabs = try? JSONDecoder().decode([Tab].self, from: tabsData),
+              !decodedTabs.isEmpty else {
+            return false
+        }
+        
         self.tabs = decodedTabs
         
         if let groupsData = UserDefaults.standard.data(forKey: "savedGroups"),
@@ -118,12 +89,26 @@ class TabManager: ObservableObject {
             self.groups = decodedGroups
         }
         
-        if let activeIdString = UserDefaults.standard.string(forKey: "activeTabId"),
-           let activeId = UUID(uuidString: activeIdString),
-           decodedTabs.contains(where: { $0.id == activeId }) {
-            self.activeTabId = activeId
+        // --- FIXED: Removed the secondary duplicated logic block that re-decoded everything ---
+        // Option 1 & 2: Deciding which tab should be active right now
+        if behaviorString == "First tab of a tab group" {
+            // Find the first tab that actually has a groupId
+            if let firstGroupedTab = decodedTabs.first(where: { $0.groupId != nil }) {
+                self.activeTabId = firstGroupedTab.id
+            } else {
+                // Fallback if they deleted all their groups
+                self.activeTabId = decodedTabs.first!.id
+            }
         } else {
-            self.activeTabId = decodedTabs.first!.id
+            // Default Option: Continue EXACTLY where I left off
+            if let activeIdString = UserDefaults.standard.string(forKey: "activeTabId"),
+               let activeId = UUID(uuidString: activeIdString),
+               decodedTabs.contains(where: { $0.id == activeId }) {
+                self.activeTabId = activeId
+            } else {
+                // Fallback if active tab ID lost tracking
+                self.activeTabId = decodedTabs.first!.id
+            }
         }
         
         return true
@@ -145,7 +130,6 @@ class TabManager: ObservableObject {
         createNewTab(in: newGroup.id)
     }
 
-    // --- NEW: THE DRAG AND DROP HANDLER ---
     func moveTab(_ tabId: UUID, to groupId: UUID?) {
         guard let index = tabs.firstIndex(where: { $0.id == tabId }) else { return }
         

@@ -11,6 +11,9 @@ struct SidebarView: View {
     @ObservedObject var tabManager: TabManager
     @Binding var isVisible: Bool
 
+    // --- FIXED: Bind directly to the user's preferred sidebar width ---
+    @AppStorage("sidebarWidth") private var sidebarWidth: Double = 260
+    
     @AppStorage("accentColorRed") private var r: Double = 0.96
     @AppStorage("accentColorGreen") private var g: Double = 0.55
     @AppStorage("accentColorBlue") private var b: Double = 0.72
@@ -60,6 +63,8 @@ struct SidebarView: View {
         .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
         .padding(.vertical, 16)
         .padding(.leading, 16)
+        // --- FIXED: Apply the dynamic width frame to the entire container when open ---
+        .frame(width: isVisible ? CGFloat(sidebarWidth) : 55)
     }
     
     private var tabContent: some View {
@@ -88,7 +93,8 @@ struct SidebarView: View {
                 .padding(.horizontal, 10)
             }
         }
-        .frame(width: 210)
+        // --- FIXED: Dynamically calculate remaining drawer room minus the control strip ---
+        .frame(width: max(0, CGFloat(sidebarWidth) - 80))
     }
 }
 
