@@ -174,6 +174,26 @@ struct ContentView: View {
                 }
                 .keyboardShortcut("y", modifiers: .command)
             }
+            // Connect menu items to internal view processes
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionNewTab"))) { _ in
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                    tabManager.createNewTab(isPrivate: isPrivateWindow)
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionCloseTab"))) { _ in
+                tabManager.closeTab(id: tabManager.activeTabId)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionReload"))) { _ in
+                tabManager.reloadActiveTab()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionToggleSidebar"))) { _ in
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    isSidebarVisible.toggle()
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionShowHistory"))) { _ in
+                showHistoryPanel = true
+            }
             .hidden()
         }
     }
