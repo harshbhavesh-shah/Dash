@@ -11,6 +11,9 @@ struct ContentView: View {
     @State private var isSidebarVisible = false
     @State private var showHistoryPanel = false
     
+    // --- THE GEOMETRIC MORPHING NAMESPACE ---
+    @Namespace private var addressBarNamespace
+    
     @AppStorage("useDarkMode") private var useDarkMode: Bool = false
     @AppStorage("useMagicMode") private var useMagicMode: Bool = false
     @AppStorage("autoHideSidebar") private var autoHideSidebar: Bool = false
@@ -77,9 +80,11 @@ struct ContentView: View {
         }
     }
     
-    // --- CLEANED AND FIXED SUBMISSION FLOW ---
     private func executeAddressBarSubmit() {
-        tabManager.updateActiveUrl(urlString: tabManager.activeTab.urlString)
+        // Wrap state transitions in a responsive spring animation context
+        withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) {
+            tabManager.updateActiveUrl(urlString: tabManager.activeTab.urlString)
+        }
         
         if autoHideSidebar && !isSidebarVisible {
             hideTask?.cancel()
@@ -91,9 +96,11 @@ struct ContentView: View {
     
     var body: some View {
         ZStack(alignment: .leading) {
-            BrowserView(tabManager: tabManager, isSidebarVisible: browserSidebarBinding)
+            // LAYER 1: BROWSER VIEW FRAME MATRIX
+            BrowserView(tabManager: tabManager, isSidebarVisible: browserSidebarBinding, namespace: addressBarNamespace)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
+            // LAYER 2: THE SIDEBAR CONTAINER
             SidebarView(tabManager: tabManager, isVisible: browserSidebarBinding)
                 .offset(x: sidebarOffset)
                 .onHover { hovering in
@@ -113,6 +120,7 @@ struct ContentView: View {
                     .zIndex(11)
             }
             
+            // LAYER 3: FIXED HIGH-FIDELITY BOTTOM INTERACTIVE BAR
             bottomBarLayer
         }
         .background(WindowHacker(showNativeButtons: shouldUseNativeButtons).frame(width: 0, height: 0))
@@ -121,7 +129,8 @@ struct ContentView: View {
                 tabManager.tabs[0].isPrivate = true
             }
         }
-        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: isLandingPage)
+        // Harmonize landing state flips globally
+        .animation(.spring(response: 0.48, dampingFraction: 0.82), value: isLandingPage)
         .preferredColorScheme((useDarkMode || useMagicMode || tabManager.activeTab.isPrivate) ? .dark : .light)
         .sheet(isPresented: $showHistoryPanel) {
             HistoryView(tabManager: tabManager) {
@@ -172,15 +181,13 @@ struct ContentView: View {
                     tabManager: tabManager,
                     onSubmit: executeAddressBarSubmit
                 )
+                // Link the bottom bar structure to our core coordinate space path
+                .matchedGeometryEffect(id: "sharedAddressBarKey", in: addressBarNamespace)
                 .padding(.bottom, 40)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .transition(.asymmetric(insertion: .identity, removal: .opacity))
             }
             .frame(maxWidth: .infinity)
             .zIndex(5)
         }
     }
-}
-
-#Preview {
-    ContentView()
 }

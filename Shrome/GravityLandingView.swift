@@ -2,94 +2,97 @@
 //  GravityLandingView.swift
 //  Shrome
 //
-//  Created by Harsh Shah on 07/03/2026.
-//
-
 
 import SwiftUI
 
 struct GravityLandingView: View {
     @Binding var urlString: String
-    var onSearch: (String) -> Void
-    @FocusState private var isFocused: Bool
+    var namespace: Namespace.ID // Interface binding parameter
+    var onSubmit: (String) -> Void
     
-    // Tap into our color preferences
+    @FocusState private var isSearchFieldFocused: Bool
+    
     @AppStorage("accentColorRed") private var r: Double = 0.96
     @AppStorage("accentColorGreen") private var g: Double = 0.55
     @AppStorage("accentColorBlue") private var b: Double = 0.72
     
-    // The Master Switch for the stars
-    @AppStorage("useMagicMode") private var useMagicMode: Bool = false
-    
     var accentColor: Color { Color(red: r, green: g, blue: b) }
     
-    // The Sky & Sage Blend
-    var magicGradient: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(red: 0.2, green: 0.75, blue: 1.0), // Sky
-                Color(red: 0.3, green: 0.85, blue: 0.5)  // Sage
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+    private var dynamicGreeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        if hour < 12 { return "Good morning, Harshie" }
+        if hour < 17 { return "Good afternoon, Harshie" }
+        return "Good evening, Harshie"
     }
-    
+
     var body: some View {
         ZStack {
-            // LAYER 1: THE BACKGROUND
-            if useMagicMode {
-                // Render the stars directly here!
-                ShootingStarsView()
-                    .transition(.opacity)
-            } else {
-                Color(NSColor.windowBackgroundColor)
-                    .ignoresSafeArea()
-            }
+            Color.clear
+                .background(.ultraThinMaterial)
+                .ignoresSafeArea()
             
-            // LAYER 2: THE MONOLITHIC PILL
-            VStack {
-                HStack(spacing: 15) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(useMagicMode ? .white.opacity(0.6) : .primary.opacity(0.3))
+            VStack(spacing: 24) {
+                VStack(spacing: 6) {
+                    Text(dynamicGreeting)
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .foregroundColor(.primary)
                     
-                    TextField("Search or enter address", text: $urlString)
-                        .textFieldStyle(.plain)
-                        .foregroundColor(useMagicMode ? .white : .primary)
-                        .font(.system(size: 18, weight: .medium, design: .rounded))
-                        .focused($isFocused)
-                        .onSubmit { onSearch(urlString) }
+                    Text("Where are we sailing today?")
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .foregroundColor(.secondary.opacity(0.7))
                 }
-                .padding(.horizontal, 32)
-                .padding(.vertical, 20)
-                .frame(width: 540)
-                .background(
-                    ZStack {
-                        Capsule()
-                            .fill(Color(NSColor.controlBackgroundColor).opacity(useMagicMode ? 0.3 : 1.0))
-                        
-                        Capsule()
-                            .stroke(useMagicMode ? Color.white.opacity(0.2) : Color.primary.opacity(0.08), lineWidth: 1)
-                    }
-                )
-                // The dynamic glow (Aurora in Magic Mode, Solid Color in Normal Mode)
-                .background(
+                .padding(.bottom, 8)
+                
+                // THE MORPHING HUB SELECTION CONTAINER
+                HStack(spacing: 0) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(accentColor)
+                        .padding(.leading, 20)
+                    
+                    TextField("Search with Shrome...", text: $urlString)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 15, weight: .medium))
+                        .multilineTextAlignment(.leading)
+                        .focused($isSearchFieldFocused)
+                        .onSubmit {
+                            onSubmit(urlString)
+                        }
+                        .padding(.leading, 12)
+                        .padding(.trailing, 20)
+                }
+                // --- FIXED: THE CORE GEOMETRIC FLUID LINKAGE ---
+                // Connects this pill container seamlessly to the bottom layout layer
+                .matchedGeometryEffect(id: "sharedAddressBarKey", in: namespace)
+                .frame(width: 550, height: 48)
+                .background {
+                    Color.clear
+                        .glassEffect(
+                            .regular.tint(accentColor.opacity(0.06)),
+                            in: Capsule()
+                        )
+                }
+                .background {
                     Capsule()
-                        .fill(useMagicMode ? AnyShapeStyle(magicGradient) : AnyShapeStyle(accentColor))
-                        .blur(radius: isFocused ? 45 : 30)
-                        .opacity(useMagicMode ? 0.4 : 0.6)
-                )
-                .shadow(color: .black.opacity(0.15), radius: 20, x: 0, y: 8)
-                .scaleEffect(isFocused ? 1.02 : 1.0)
+                        .fill(
+                            LinearGradient(
+                                colors: [accentColor.opacity(0.65), accentColor.opacity(0.35), accentColor.opacity(0.65)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: 510, height: 24)
+                        .blur(radius: 35)
+                        .opacity(0.85)
+                }
+                .shadow(color: .black.opacity(0.02), radius: 15, x: 0, y: 8)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .offset(y: -20)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
-            isFocused = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                isSearchFieldFocused = true
+            }
         }
-        .animation(.easeInOut(duration: 0.8), value: useMagicMode) // Smooth fade between space and solid
-        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isFocused)
     }
 }

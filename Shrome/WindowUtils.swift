@@ -21,11 +21,10 @@ struct WebView: NSViewRepresentable {
     func makeNSView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         
-        // --- SAFE FIXED COOKIE DATA STORE ---
+        // Safe, native global persistence setup
         if tab.isPrivate {
             config.websiteDataStore = .nonPersistent()
         } else {
-            // Revert to the native safe global storage pipeline
             config.websiteDataStore = .default()
         }
         
