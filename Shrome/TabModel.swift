@@ -169,6 +169,64 @@ class TabManager: ObservableObject {
         }
     }
 
+    // MARK: - Autocomplete
+
+    // A lightweight suggestion value passed to the UI layer.
+    struct URLSuggestion: Identifiable, Equatable {
+        let id = UUID()
+        let url: String
+        let title: String
+        let visitedAt: Date
+    }
+
+    // Queries HistoryItem on the background context so the main thread
+    // never blocks during typing. Results are deduped by host+path and
+    // capped at 6 so the dropdown stays compact.
+    func fetchSuggestions(matching query: String) async -> [URLSuggestion] {
+        guard !query.isEmpty else { return [] }
+
+        let ctx = backgroundContext
+        return await ctx.perform {
+            let request = NSFetchRequest<HistoryItem>(entityName: "HistoryItem")
+
+            // Match against both stored URL and title fields.
+            request.predicate = NSPredicate(
+                format: "url CONTAINS[cd] %@ OR title CONTAINS[cd] %@",
+                query, query
+            )
+            // Most-recent first so the best matches surface at the top.
+            request.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
+            // Fetch more than we need so dedup has material to work with.
+            request.fetchLimit = 40
+
+            guard let results = try? ctx.fetch(request) else { return [] }
+
+            // Deduplicate: keep only the most-recent visit per URL string.
+            var seen = Set<String>()
+            var suggestions: [URLSuggestion] = []
+
+            for item in results {
+                guard let url = item.url, !url.isEmpty else { continue }
+                // Normalise the key to scheme+host+path, ignoring fragments/query.
+                let key: String
+                if let parsed = URL(string: url), let host = parsed.host {
+                    key = host + parsed.path
+                } else {
+                    key = url
+                }
+                guard !seen.contains(key) else { continue }
+                seen.insert(key)
+                suggestions.append(URLSuggestion(
+                    url: url,
+                    title: item.title ?? url,
+                    visitedAt: item.timestamp ?? .distantPast
+                ))
+                if suggestions.count == 6 { break }
+            }
+            return suggestions
+        }
+    }
+
     // MARK: - Persistence
 
     // PERF FIX: Debounced 500ms — collapses rapid-fire mutations (e.g. a

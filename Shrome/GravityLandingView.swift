@@ -106,6 +106,15 @@ struct GravityLandingView: View {
 
     @EnvironmentObject var tabManager: TabManager
 
+    // --- Autocomplete state ---
+    @State private var suggestions: [TabManager.URLSuggestion] = []
+    @State private var selectedSuggestionIndex: Int? = nil
+    @State private var debounceTask: Task<Void, Never>? = nil
+
+    private var showSuggestions: Bool {
+        isSearchFieldFocused && !suggestions.isEmpty && !urlString.isEmpty
+    }
+
     var accentColor: Color { Color(red: r, green: g, blue: b) }
 
     private var isPrivateSession: Bool {
@@ -164,7 +173,21 @@ struct GravityLandingView: View {
                 }
                 .padding(.bottom, 8)
 
-                // Search bar
+                // Search bar + autocomplete dropdown
+                VStack(spacing: 4) {
+                    // Suggestions appear below the search field on the landing page.
+                    if showSuggestions {
+                        AutocompleteSuggestionList(
+                            suggestions: suggestions,
+                            selectedIndex: selectedSuggestionIndex,
+                            onSelect: { suggestion in
+                                urlString = suggestion.url
+                                dismissSuggestions()
+                                onSubmit(urlString)
+                            }
+                        )
+                    }
+
                 HStack(spacing: 0) {
                     Image(systemName: isPrivateSession ? "shield.fill" : "magnifyingglass")
                         .font(.system(size: 15, weight: .bold))
@@ -176,9 +199,18 @@ struct GravityLandingView: View {
                         .font(.system(size: 15, weight: .medium))
                         .multilineTextAlignment(.leading)
                         .focused($isSearchFieldFocused)
-                        .onSubmit { onSubmit(urlString) }
+                        .onSubmit {
+                            dismissSuggestions()
+                            onSubmit(urlString)
+                        }
                         .padding(.leading, 12)
                         .padding(.trailing, 20)
+                        // Keyboard navigation through suggestions.
+                        .background(KeyEventInterceptor(
+                            onArrowDown: selectNext,
+                            onArrowUp: selectPrevious,
+                            onEscape: { dismissSuggestions() }
+                        ))
                 }
                 .matchedGeometryEffect(id: "sharedAddressBarKey", in: namespace)
                 .frame(width: 550, height: 48)
@@ -203,6 +235,8 @@ struct GravityLandingView: View {
                         .opacity(0.85)
                 }
                 .shadow(color: .black.opacity(0.02), radius: 15, x: 0, y: 8)
+                } // end VStack (search bar + suggestions)
+                .animation(.spring(response: 0.28, dampingFraction: 0.72), value: showSuggestions)
 
                 // Favourite tiles
                 HStack(spacing: 32) {
@@ -225,5 +259,46 @@ struct GravityLandingView: View {
                 isSearchFieldFocused = true
             }
         }
+        .onChange(of: urlString) { _, newValue in
+            debounceTask?.cancel()
+            selectedSuggestionIndex = nil
+            guard !newValue.isEmpty, isSearchFieldFocused else {
+                suggestions = []
+                return
+            }
+            debounceTask = Task {
+                try? await Task.sleep(nanoseconds: 120_000_000)
+                guard !Task.isCancelled else { return }
+                let results = await tabManager.fetchSuggestions(matching: newValue)
+                await MainActor.run {
+                    withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                        suggestions = results
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Keyboard navigation
+
+    private func selectNext() {
+        guard !suggestions.isEmpty else { return }
+        let next = (selectedSuggestionIndex ?? -1) + 1
+        selectedSuggestionIndex = min(next, suggestions.count - 1)
+        if let idx = selectedSuggestionIndex { urlString = suggestions[idx].url }
+    }
+
+    private func selectPrevious() {
+        guard let current = selectedSuggestionIndex else { return }
+        selectedSuggestionIndex = current > 0 ? current - 1 : nil
+        if let idx = selectedSuggestionIndex { urlString = suggestions[idx].url }
+    }
+
+    private func dismissSuggestions() {
+        debounceTask?.cancel()
+        withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
+            suggestions = []
+        }
+        selectedSuggestionIndex = nil
     }
 }
