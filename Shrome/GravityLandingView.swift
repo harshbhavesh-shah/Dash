@@ -127,12 +127,23 @@ struct GravityLandingView: View {
         return "Where are we sailing today?"
     }
 
-    let favorites = [
-        (name: "Apple",   url: "apple.com",    icon: "apple.logo"),
-        (name: "GitHub",  url: "github.com",   icon: "terminal.fill"),
-        (name: "YouTube", url: "youtube.com",  icon: "play.rectangle.fill"),
-        (name: "Dribbble",url: "dribbble.com", icon: "paintpalette.fill")
+    // --- REPLACE YOUR HARDCODED 'let favorites = [...]' BLOCK WITH THIS ---
+    @AppStorage("customFavoritesJSON") private var customFavoritesJSON: String = """
+    [
+        {"name": "Apple", "url": "apple.com", "icon": "apple.logo"},
+        {"name": "GitHub", "url": "github.com", "icon": "terminal.fill"},
+        {"name": "YouTube", "url": "youtube.com", "icon": "play.rectangle.fill"},
+        {"name": "Dribbble", "url": "dribbble.com", "icon": "paintpalette.fill"}
     ]
+    """
+
+    // A clean computed property to decode the active favorites list seamlessly
+    private var favorites: [(name: String, url: String, icon: String)] {
+        struct FavItem: Codable { let name: String; let url: String; let icon: String }
+        guard let data = customFavoritesJSON.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([FavItem].self, from: data) else { return [] }
+        return decoded.map { ($0.name, $0.url, $0.icon) }
+    }
 
     var body: some View {
         ZStack {

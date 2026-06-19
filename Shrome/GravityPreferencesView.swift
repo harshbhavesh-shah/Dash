@@ -28,7 +28,6 @@ class GravityPreferences: ObservableObject {
     @AppStorage("selectedShromeTheme") var selectedTheme: ShromeTheme = .cosmicPastel
     
     @AppStorage("useDarkMode") var useDarkMode: Bool = false
-    @AppStorage("useMagicMode") var useMagicMode: Bool = false
     @AppStorage("sidebarWidth") var sidebarWidth: Double = 260
     @AppStorage("autoHideSidebar") var autoHideSidebar: Bool = false
     @AppStorage("enableAddressBarTint") var enableAddressBarTint: Bool = true
@@ -325,12 +324,6 @@ struct AppearanceSection: View {
         PrefsCard {
             PrefsRow(label: "Dark mode", sublabel: "Switch Shrome to a dark appearance") {
                 Toggle("", isOn: $prefs.useDarkMode)
-                    .toggleStyle(.switch)
-                    .labelsHidden()
-            }
-            
-            PrefsRow(label: "Magic Mode", sublabel: "Enable deep-space starry background and aurora gradients") {
-                Toggle("", isOn: $prefs.useMagicMode)
                     .toggleStyle(.switch)
                     .labelsHidden()
             }

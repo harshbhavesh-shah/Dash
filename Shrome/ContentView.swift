@@ -15,7 +15,6 @@ struct ContentView: View {
     @Namespace private var addressBarNamespace
     
     @AppStorage("useDarkMode") private var useDarkMode: Bool = false
-    @AppStorage("useMagicMode") private var useMagicMode: Bool = false
     @AppStorage("autoHideSidebar") private var autoHideSidebar: Bool = false
     // 1. Add this at the top of ContentView with your other storage lines
     @AppStorage("searchEngine") private var searchEngine: String = "Google"
@@ -212,44 +211,12 @@ struct ContentView: View {
             }
         }
         .animation(.spring(response: 0.48, dampingFraction: 0.82), value: isLandingPage)
-        .preferredColorScheme((useDarkMode || useMagicMode || tabManager.activeTab.isPrivate) ? .dark : .light)
+        .preferredColorScheme((useDarkMode || tabManager.activeTab.isPrivate) ? .dark : .light)
         .sheet(isPresented: $showHistoryPanel) {
             HistoryView(tabManager: tabManager) {
                 showHistoryPanel = false
             }
             .environment(\.managedObjectContext, viewContext)
-        }
-        .background {
-            Group {
-                // Keyboard Action Targets
-                Button("New Tab") {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                        tabManager.createNewTab(isPrivate: isPrivateWindow)
-                    }
-                }
-                .keyboardShortcut("t", modifiers: .command)
-                
-                Button("New Private Window") {
-                    openWindow(id: "PrivateShromeWindow")
-                }
-                .keyboardShortcut("n", modifiers: [.command, .shift])
-                
-                Button("New Window") {
-                    openWindow(id: "ShromeWindow")
-                }
-                .keyboardShortcut("n", modifiers: .command)
-                
-                Button("Reload") {
-                    tabManager.reloadActiveTab()
-                }
-                .keyboardShortcut("r", modifiers: .command)
-                
-                Button("Show History") {
-                    showHistoryPanel = true
-                }
-                .keyboardShortcut("y", modifiers: .command)
-            }
-            .hidden()
         }
         // Menu bar listeners
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionNewTab"))) { _ in

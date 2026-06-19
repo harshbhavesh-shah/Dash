@@ -22,17 +22,12 @@ struct LandingPageView: View {
     
     var body: some View {
         ZStack {
-            if useMagicMode {
-                ShootingStarsView()
-                    .transition(.opacity)
-            } else {
                 LinearGradient(
                     colors: [Color.primary.opacity(0.03), Color(NSColor.windowBackgroundColor)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
-            }
             
             VStack(spacing: 40) {
                 Spacer()
