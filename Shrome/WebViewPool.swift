@@ -114,6 +114,11 @@ class WebViewPool {
         
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.allowsBackForwardNavigationGestures = true
+        // FIX: macOS WKWebView ships with pinch-to-zoom support already
+        // built in (it drives the trackpad magnify gesture the same way
+        // NSScrollView does) — it's just off by default. Turning this on
+        // is the entire fix; no custom gesture recognizer needed.
+        webView.allowsMagnification = true
         webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15"
         
         // FIX: Attach the rule list if it's ready; otherwise register this

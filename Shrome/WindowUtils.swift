@@ -19,53 +19,31 @@ struct WebView: NSViewRepresentable {
     }
     
     func makeNSView(context: Context) -> WKWebView {
-        let config = WKWebViewConfiguration()
-        
-        // Safe, native global persistence setup
-        if tab.isPrivate {
-            config.websiteDataStore = .nonPersistent()
-        } else {
-            config.websiteDataStore = .default()
-        }
-        
-        config.preferences.isElementFullscreenEnabled = true
-        
-        let blockTrackers = UserDefaults.standard.object(forKey: "blockTrackers") as? Bool ?? true
-        if blockTrackers {
-            if let ruleList = AdBlocker.shared.ruleList {
-                config.userContentController.add(ruleList)
-            }
-            config.userContentController.addUserScript(AdBlocker.shared.getYouTubeSniper())
-        }
-        
-        let webView = WKWebView(frame: .zero, configuration: config)
-        webView.allowsBackForwardNavigationGestures = true
+        // PERF FIX: Instead of running an expensive constructor, dequeue a pre-heated viewport process instantly
+        let webView = WebViewPool.shared.dequeueWebView(isPrivate: tab.isPrivate)
         
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
         
-        webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15"
-        
-        let coordinator = context.coordinator
-        coordinator.urlObservation = webView.observe(\.url, options: [.new]) { [weak coordinator] view, _ in
-            if let newUrl = view.url {
-                DispatchQueue.main.async {
-                    if let parent = coordinator?.parent, parent.tab.url != newUrl {
-                        coordinator?.parent.tab.url = newUrl
-                        coordinator?.parent.tab.urlString = newUrl.absoluteString
-                    }
-                }
-            }
-        }
+        // Setup internal KVO observation channel
+        context.coordinator.setupUrlObservation(for: webView)
         
         return webView
     }
     
     func updateNSView(_ nsView: WKWebView, context: Context) {
-        if let currentViewUrl = nsView.url, currentViewUrl != tab.url {
+        context.coordinator.parent = self
+        
+        if let currentViewUrl = nsView.url, currentViewUrl.absoluteString != tab.url.absoluteString {
+            // FIX: this WKWebView instance is shared/renavigated across tab
+            // switches rather than recreated per tab, so a pinch-zoom level
+            // set on the previous tab would otherwise carry over visually
+            // onto whatever page loads next. Reset before navigating away.
+            nsView.magnification = 1.0
             let request = URLRequest(url: tab.url)
             nsView.load(request)
         } else if nsView.url == nil && tab.url.absoluteString != "about:blank" {
+            nsView.magnification = 1.0
             let request = URLRequest(url: tab.url)
             nsView.load(request)
         } else if context.coordinator.lastReloadTrigger != tab.reloadTrigger {
@@ -83,6 +61,18 @@ struct WebView: NSViewRepresentable {
             self.parent = parent
             self.lastReloadTrigger = parent.tab.reloadTrigger
             super.init()
+        }
+        
+        func setupUrlObservation(for webView: WKWebView) {
+            urlObservation = webView.observe(\.url, options: [.new]) { [weak self] view, _ in
+                guard let self = self, let newUrl = view.url else { return }
+                DispatchQueue.main.async {
+                    if self.parent.tab.url != newUrl {
+                        self.parent.tab.url = newUrl
+                        self.parent.tab.urlString = newUrl.absoluteString
+                    }
+                }
+            }
         }
         
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
