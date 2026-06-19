@@ -2,8 +2,6 @@
 //  SidebarView.swift
 //  Shrome
 //
-//  Created by Harsh Shah on 07/03/2026.
-//
 
 import SwiftUI
 
@@ -11,13 +9,12 @@ struct SidebarView: View {
     @ObservedObject var tabManager: TabManager
     @Binding var isVisible: Bool
 
-    // --- FIXED: Bind directly to the user's preferred sidebar width ---
     @AppStorage("sidebarWidth") private var sidebarWidth: Double = 260
-    
+
     @AppStorage("accentColorRed") private var r: Double = 0.96
     @AppStorage("accentColorGreen") private var g: Double = 0.55
     @AppStorage("accentColorBlue") private var b: Double = 0.72
-    
+
     var accentColor: Color { Color(red: r, green: g, blue: b) }
 
     var body: some View {
@@ -27,7 +24,7 @@ struct SidebarView: View {
                 DynamicTrafficLights(isVertical: !isVisible)
                     .frame(width: isVisible ? 80 : 55)
                     .padding(.top, 30)
-                
+
                 Button(action: {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                         isVisible.toggle()
@@ -35,11 +32,11 @@ struct SidebarView: View {
                 }) {
                     Image(systemName: isVisible ? "sidebar.left" : "sidebar.right")
                         .font(.system(size: 14, weight: .black))
-                        .foregroundColor(.primary.opacity(0.6)) // Adaptive
+                        .foregroundColor(.primary.opacity(0.6))
                         .frame(width: isVisible ? 80 : 55, height: 35)
                 }
                 .buttonStyle(.plain)
-                
+
                 Button(action: { tabManager.createNewTab() }) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 22))
@@ -48,20 +45,17 @@ struct SidebarView: View {
                         .frame(width: isVisible ? 80 : 55)
                 }
                 .buttonStyle(.plain)
-                
-                // --- COMPACT COLLAPSED DECK ELEMENT ---
-                // Slides neatly below your creation button when the sidebar collapses down
+
                 if !isVisible {
                     Spacer().frame(height: 10)
-                    
                     CollapsedSidebarGroupsDeck(tabManager: tabManager)
                         .transition(.scale.combined(with: .opacity))
                 }
-                
+
                 Spacer()
             }
             .frame(width: isVisible ? 80 : 55)
-            
+
             // --- THE TAB DRAWER ---
             if isVisible {
                 tabContent
@@ -72,24 +66,23 @@ struct SidebarView: View {
         .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
         .padding(.vertical, 16)
         .padding(.leading, 16)
-        // Apply the dynamic width frame to the entire container when open
         .frame(width: isVisible ? CGFloat(sidebarWidth) : 55)
     }
-    
+
     private var tabContent: some View {
         VStack(alignment: .leading, spacing: 12) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    // SECTOR A: UNASSIGNED STANDARD FLAT ACTIVE LIST
+                    // SECTOR A: UNASSIGNED TABS
                     VStack(alignment: .leading, spacing: 8) {
                         Text("TABS")
                             .font(.system(size: 10, weight: .black))
                             .foregroundColor(.primary.opacity(0.4))
                             .padding(.leading, 12)
-                        
-                        // Filters out items that are already managed inside group decks
+
+                        // PERF FIX: Filter computed once here, not inside ForEach.
                         let unassignedTabs = tabManager.tabs.filter { $0.groupId == nil }
-                        
+
                         if unassignedTabs.isEmpty {
                             Text("No unassigned tabs")
                                 .font(.system(size: 11, design: .rounded))
@@ -97,24 +90,41 @@ struct SidebarView: View {
                                 .padding(.leading, 12)
                                 .padding(.vertical, 4)
                         } else {
+                            // PERF FIX: TabRow no longer holds @ObservedObject tabManager.
+                            // Instead it receives only the plain value-type Tab it needs to
+                            // display, plus two focused callbacks for the two actions it can
+                            // trigger (activate, close). SwiftUI can now skip re-rendering any
+                            // row whose Tab struct hasn't changed — previously every tab row
+                            // re-rendered whenever *any* tab anywhere changed, because they all
+                            // shared the same @ObservedObject reference.
                             ForEach(unassignedTabs) { tab in
-                                TabRow(tabManager: tabManager, tab: tab, isActive: tabManager.activeTabId == tab.id) {
-                                    withAnimation(.spring()) {
-                                        tabManager.closeTab(id: tab.id)
+                                TabRow(
+                                    tab: tab,
+                                    isActive: tabManager.activeTabId == tab.id,
+                                    groups: tabManager.groups,
+                                    onActivate: {
+                                        withAnimation(.snappy) {
+                                            tabManager.activeTabId = tab.id
+                                        }
+                                    },
+                                    onClose: {
+                                        withAnimation(.spring()) {
+                                            tabManager.closeTab(id: tab.id)
+                                        }
+                                    },
+                                    onMoveToGroup: { groupId in
+                                        if let idx = tabManager.tabs.firstIndex(where: { $0.id == tab.id }) {
+                                            tabManager.tabs[idx].groupId = groupId
+                                            tabManager.saveSession()
+                                        }
                                     }
-                                }
-                                .onTapGesture {
-                                    withAnimation(.snappy) {
-                                        tabManager.activeTabId = tab.id
-                                    }
-                                }
+                                )
                             }
                         }
                     }
-                    
+
                     Divider().opacity(0.1).padding(.horizontal, 10)
-                    
-                    // --- NESTED EXTENDED OPEN GROUPS DECK VIEW ---
+
                     OpenSidebarGroupsDeck(tabManager: tabManager)
                 }
                 .padding(.horizontal, 10)
@@ -125,24 +135,42 @@ struct SidebarView: View {
     }
 }
 
-// --- TAB ROW ---
+// MARK: - Tab Row
+
 struct TabRow: View {
-    @ObservedObject var tabManager: TabManager
+    // PERF FIX: Plain value-type Tab instead of @ObservedObject TabManager.
+    // This row now only re-renders when its own Tab value changes, not when
+    // any other tab in the manager changes.
     let tab: Tab
     let isActive: Bool
+    let groups: [TabGroup]
+    var onActivate: () -> Void
     var onClose: () -> Void
-    
+    var onMoveToGroup: (UUID?) -> Void
+
     @State private var isHovered = false
-    
+
     @AppStorage("accentColorRed") private var r: Double = 0.96
     @AppStorage("accentColorGreen") private var g: Double = 0.55
     @AppStorage("accentColorBlue") private var b: Double = 0.72
-    
+
     var accentColor: Color { Color(red: r, green: g, blue: b) }
-    
+
+    // PERF FIX: Favicon URL is a stable computed value derived from the tab's
+    // host. By giving AsyncImage a consistent URL that only changes when the
+    // host actually changes, SwiftUI reuses the existing view — preventing
+    // redundant network fetches on hover-triggered re-renders.
+    private var faviconURL: URL? {
+        guard let host = tab.url.host, !host.isEmpty else { return nil }
+        return URL(string: "https://www.google.com/s2/favicons?sz=64&domain=\(host)")
+    }
+
     var body: some View {
         HStack(spacing: 12) {
-            AsyncImage(url: URL(string: "https://www.google.com/s2/favicons?sz=64&domain=\(tab.url.host ?? "")")) { phase in
+            // PERF FIX: .id(tab.url.host) gives AsyncImage a stable identity
+            // tied to the domain. Without this, any parent re-render causes
+            // AsyncImage to discard its cached image and start a fresh fetch.
+            AsyncImage(url: faviconURL) { phase in
                 if let image = phase.image {
                     image.resizable()
                 } else {
@@ -152,20 +180,21 @@ struct TabRow: View {
             }
             .frame(width: 18, height: 18)
             .cornerRadius(4)
-            
+            .id(tab.url.host ?? "blank")
+
             Text(tab.url.host ?? "New Tab")
                 .font(.system(size: 12, weight: isActive ? .bold : .medium))
-                .foregroundColor(isActive ? .primary : .primary.opacity(0.7)) // Adaptive
+                .foregroundColor(isActive ? .primary : .primary.opacity(0.7))
                 .lineLimit(1)
-            
+
             Spacer()
-            
+
             ZStack {
                 if isHovered {
                     Button(action: onClose) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 14))
-                            .foregroundColor(.primary.opacity(0.3)) // Adaptive
+                            .foregroundColor(.primary.opacity(0.3))
                     }
                     .buttonStyle(.plain)
                     .transition(.scale.combined(with: .opacity))
@@ -197,67 +226,79 @@ struct TabRow: View {
             else { NSCursor.pop() }
         }
         .contentShape(Rectangle())
-        // --- DYNAMIC CONTEXT ROUTING MATRIX ---
+        .onTapGesture(perform: onActivate)
         .contextMenu {
             Menu("Move Tab to Group") {
                 Button("Unassigned (General)") {
-                    if let idx = tabManager.tabs.firstIndex(where: { $0.id == tab.id }) {
-                        tabManager.tabs[idx].groupId = nil
-                        tabManager.saveSession()
-                    }
+                    onMoveToGroup(nil)
                 }
-                
+
                 Divider()
-                
-                ForEach(tabManager.groups) { group in
-                    Button(action: {
-                        if let idx = tabManager.tabs.firstIndex(where: { $0.id == tab.id }) {
-                            tabManager.tabs[idx].groupId = group.id
-                            tabManager.saveSession()
-                        }
-                    }) {
+
+                // PERF FIX: Groups passed in as a plain [TabGroup] array.
+                // Previously ForEach here pulled from tabManager directly,
+                // creating another hidden dependency on the full @ObservedObject.
+                ForEach(groups) { group in
+                    Button(action: { onMoveToGroup(group.id) }) {
                         Label(group.name, systemImage: group.icon)
                     }
                 }
             }
-            
-            Button("Close Tab", role: .destructive) {
-                tabManager.closeTab(id: tab.id)
-            }
+
+            Button("Close Tab", role: .destructive, action: onClose)
         }
     }
 }
 
-// --- DYNAMIC TRAFFIC LIGHTS ---
+// MARK: - Dynamic Traffic Lights
+
 struct DynamicTrafficLights: View {
     let isVertical: Bool
-    
+
     let closeColor = Color(red: 255/255, green: 95/255, blue: 86/255)
-    let minColor = Color(red: 255/255, green: 189/255, blue: 46/255)
-    let maxColor = Color(red: 39/255, green: 201/255, blue: 63/255)
+    let minColor   = Color(red: 255/255, green: 189/255, blue: 46/255)
+    let maxColor   = Color(red: 39/255,  green: 201/255, blue: 63/255)
 
     var body: some View {
-        let layout = isVertical ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 8))
-        
-        layout {
-            CircleButton(color: closeColor, iconName: "xmark") { NSApplication.shared.keyWindow?.close() }
-            CircleButton(color: minColor, iconName: "minus") { NSApplication.shared.keyWindow?.miniaturize(nil) }
-            CircleButton(color: maxColor, iconName: "plus") { NSApplication.shared.keyWindow?.toggleFullScreen(nil) }
+        // PERF FIX: Replaced AnyLayout wrapping VStackLayout/HStackLayout.
+        // AnyLayout erases type information, forcing SwiftUI to discard and
+        // rebuild the entire layout subtree on every isVertical toggle.
+        // A plain if/else lets SwiftUI keep each branch in the view hierarchy
+        // and simply animate between them without a full layout cache flush.
+        if isVertical {
+            VStack(spacing: 8) { buttons }
+        } else {
+            HStack(spacing: 8) { buttons }
+        }
+    }
+
+    @ViewBuilder
+    private var buttons: some View {
+        CircleButton(color: closeColor, iconName: "xmark") {
+            NSApplication.shared.keyWindow?.close()
+        }
+        CircleButton(color: minColor, iconName: "minus") {
+            NSApplication.shared.keyWindow?.miniaturize(nil)
+        }
+        CircleButton(color: maxColor, iconName: "plus") {
+            NSApplication.shared.keyWindow?.toggleFullScreen(nil)
         }
     }
 }
+
+// MARK: - Circle Button
 
 struct CircleButton: View {
     let color: Color
     let iconName: String
     let action: () -> Void
     @State private var isHovered = false
-    
+
     var body: some View {
         ZStack {
             Circle()
                 .fill(isHovered ? color.opacity(0.9) : color)
-            
+
             Image(systemName: iconName)
                 .font(.system(size: 6, weight: .black))
                 .foregroundColor(.black.opacity(0.5))

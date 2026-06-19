@@ -5,69 +5,72 @@
 
 import SwiftUI
 import AppKit
-import LocalAuthentication // --- REQUIRED FOR TOUCH ID SYSTEM ACCESS ---
+import LocalAuthentication
 
 struct ContentView: View {
     @StateObject private var tabManager = TabManager()
     @State private var isSidebarVisible = false
     @State private var showHistoryPanel = false
-    
+
     @Namespace private var addressBarNamespace
-    
+
     @AppStorage("useDarkMode") private var useDarkMode: Bool = false
     @AppStorage("autoHideSidebar") private var autoHideSidebar: Bool = false
-    // 1. Add this at the top of ContentView with your other storage lines
     @AppStorage("searchEngine") private var searchEngine: String = "Google"
-    
-    // Apple native system window context checks
+
     @Environment(\.isPrivateWindow) private var isPrivateWindow
     @Environment(\.openWindow) private var openWindow
     @Environment(\.managedObjectContext) private var viewContext
-    
+
     @State private var isEdgeHovered = false
     @State private var hideTask: Task<Void, Never>? = nil
-    
-    // --- NEW: BIOMETRIC SECURITY STATES ---
+
     @State private var isPrivateWindowUnlocked = false
     @State private var biometricErrorMessage: String? = nil
-    
+
+    // PERF FIX: Separate the text the user is actively typing from the URL
+    // the WebView should load. Previously both shared the same urlString
+    // binding on Tab, which meant every keystroke in the address bar mutated
+    // tab.url and triggered updateNSView in WebView — potentially firing a
+    // mid-typed URL load on every character. displayURLString is local to
+    // ContentView and only committed to the tab model when the user submits.
+    @State private var displayURLString: String = ""
+
     private var isLandingPage: Bool {
-        return tabManager.activeTab.url.absoluteString == "about:blank"
+        tabManager.activeTab.url.absoluteString == "about:blank"
     }
-    
+
     private var sidebarOffset: CGFloat {
         if !autoHideSidebar { return 0 }
         if isSidebarVisible { return 0 }
         if isEdgeHovered { return 0 }
         return -350
     }
-    
+
     private var shouldUseNativeButtons: Bool {
-        return autoHideSidebar && !isSidebarVisible && !isEdgeHovered
+        autoHideSidebar && !isSidebarVisible && !isEdgeHovered
     }
-    
+
+    // PERF FIX: addressBarBinding now drives displayURLString, not
+    // tab.urlString directly. The WebView only sees committed URLs.
     private var addressBarBinding: Binding<String> {
         Binding(
-            get: { tabManager.activeTab.urlString },
-            set: { newValue in
-                if let index = tabManager.tabs.firstIndex(where: { $0.id == tabManager.activeTabId }) {
-                    tabManager.tabs[index].urlString = newValue
-                }
-            }
+            get: { displayURLString },
+            set: { displayURLString = $0 }
         )
     }
-    
+
     private var browserSidebarBinding: Binding<Bool> {
         Binding(
             get: { isSidebarVisible },
             set: { isSidebarVisible = $0 }
         )
     }
-    
+
     private func handleHover(isHovering: Bool) {
         guard autoHideSidebar && !isSidebarVisible else { return }
         hideTask?.cancel()
-        
+
         if isHovering {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                 isEdgeHovered = true
@@ -85,14 +88,20 @@ struct ContentView: View {
             }
         }
     }
-    
-    // 2. Update the submission function to look like this:
+
     private func executeAddressBarSubmit() {
-        withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) {
-            // --- FIXED: Pass the storage token ---
-            tabManager.updateActiveUrl(urlString: tabManager.activeTab.urlString, searchEngine: searchEngine)
+        // Commit the display string into the tab model, which is what
+        // triggers the actual WebView navigation.
+        tabManager.updateActiveUrl(urlString: displayURLString, searchEngine: searchEngine)
+
+        // Sync display string back to the resolved URL after commit
+        // so the bar shows the canonical form (e.g. https:// prepended).
+        DispatchQueue.main.async {
+            displayURLString = tabManager.activeTab.urlString
         }
-        
+
+        withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) { }
+
         if autoHideSidebar && !isSidebarVisible {
             hideTask?.cancel()
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
@@ -100,16 +109,13 @@ struct ContentView: View {
             }
         }
     }
-    
-    // --- NEW: TRIGGER LOCAL MAC TOUCH ID PROMPT ---
+
     private func triggerTouchIDPrompt() {
         let context = LAContext()
         var error: NSError?
-        
-        // deviceOwnerAuthentication permits Touch ID fallback to standard Mac user password seamlessly
+
         if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) {
             let reason = "unlock your private Shrome session"
-            
             context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, authError in
                 DispatchQueue.main.async {
                     if success {
@@ -122,24 +128,28 @@ struct ContentView: View {
                 }
             }
         } else {
-            self.biometricErrorMessage = error?.localizedDescription ?? "Biometrics unavailable"
+            biometricErrorMessage = error?.localizedDescription ?? "Biometrics unavailable"
         }
     }
-    
+
     var body: some View {
         ZStack(alignment: .leading) {
-            // LAYER 1: Core Web Render view matrices
-            BrowserView(tabManager: tabManager, isSidebarVisible: browserSidebarBinding, namespace: addressBarNamespace)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // LAYER 1: Core Web Render
+            BrowserView(
+                tabManager: tabManager,
+                isSidebarVisible: browserSidebarBinding,
+                namespace: addressBarNamespace
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // LAYER 2: Sliding Sidebar Management View
+            // LAYER 2: Sliding Sidebar
             SidebarView(tabManager: tabManager, isVisible: browserSidebarBinding)
                 .offset(x: sidebarOffset)
                 .onHover { hovering in
                     handleHover(isHovering: hovering)
                 }
                 .zIndex(10)
-            
+
             if autoHideSidebar && !isSidebarVisible && !isEdgeHovered {
                 Rectangle()
                     .fill(Color.white.opacity(0.001))
@@ -151,30 +161,30 @@ struct ContentView: View {
                     }
                     .zIndex(11)
             }
-            
-            // LAYER 3: Dynamic Bottom Pill Address Bar
+
+            // LAYER 3: Floating Address Bar
             bottomBarLayer
-            
-            // --- NEW LAYER 4: THE SECURITY LOCK CHECKPOINT SHIELD ---
+
+            // LAYER 4: Private Session Lock Shield
             if isPrivateWindow && !isPrivateWindowUnlocked {
                 ZStack {
                     Color.clear
                         .background(.ultraThinMaterial)
                         .ignoresSafeArea()
-                    
+
                     VStack(spacing: 16) {
                         Image(systemName: "lock.shield.fill")
                             .font(.system(size: 40))
                             .foregroundColor(.purple)
-                        
+
                         Text("Private Session Locked")
                             .font(.system(size: 18, weight: .bold, design: .rounded))
-                        
+
                         Text("Please authenticate to reveal your tabs.")
                             .font(.system(size: 12))
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
-                        
+
                         Button(action: triggerTouchIDPrompt) {
                             Label("Unlock with Touch ID", systemImage: "touchid")
                                 .font(.system(size: 12, weight: .medium))
@@ -183,7 +193,7 @@ struct ContentView: View {
                         .buttonStyle(.borderedProminent)
                         .tint(.purple)
                         .keyboardShortcut(.defaultAction)
-                        
+
                         if let errorMsg = biometricErrorMessage {
                             Text(errorMsg)
                                 .font(.system(size: 11))
@@ -193,11 +203,18 @@ struct ContentView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .zIndex(100) // Float on top of everything else
+                .zIndex(100)
             }
         }
-        .background(WindowHacker(showNativeButtons: shouldUseNativeButtons).frame(width: 0, height: 0))
+        .background(
+            WindowHacker(showNativeButtons: shouldUseNativeButtons).frame(width: 0, height: 0)
+        )
         .onAppear {
+            // Seed the display string from the active tab on first appear.
+            displayURLString = tabManager.activeTab.urlString == "about:blank"
+                ? ""
+                : tabManager.activeTab.urlString
+
             if isPrivateWindow {
                 if tabManager.tabs.isEmpty {
                     tabManager.createNewTab(isPrivate: true)
@@ -206,8 +223,28 @@ struct ContentView: View {
                         tabManager.tabs[i].isPrivate = true
                     }
                 }
-                // Auto-trigger on creation/load window
                 triggerTouchIDPrompt()
+            }
+        }
+        // PERF FIX: Cancel the pending hide timer if the view disappears
+        // (e.g. window closed while hover delay is in flight). Without this
+        // the Task holds a reference keeping the view alive and may fire
+        // a UI update on a deallocated context.
+        .onDisappear {
+            hideTask?.cancel()
+        }
+        // Sync displayURLString whenever the active tab changes externally
+        // (tab switch, back/forward navigation, link click opening new tab).
+        .onChange(of: tabManager.activeTabId) { _, _ in
+            let urlStr = tabManager.activeTab.urlString
+            displayURLString = urlStr == "about:blank" ? "" : urlStr
+        }
+        .onChange(of: tabManager.activeTab.urlString) { _, newValue in
+            // Keep display bar in sync when WebView navigates on its own
+            // (redirects, in-page link clicks) — but only if the user isn't
+            // actively editing (i.e. the committed URL changed, not a draft).
+            if newValue != "about:blank" {
+                displayURLString = newValue
             }
         }
         .animation(.spring(response: 0.48, dampingFraction: 0.82), value: isLandingPage)
@@ -218,7 +255,6 @@ struct ContentView: View {
             }
             .environment(\.managedObjectContext, viewContext)
         }
-        // Menu bar listeners
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionNewTab"))) { _ in
             withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
                 tabManager.createNewTab(isPrivate: isPrivateWindow)
@@ -239,7 +275,7 @@ struct ContentView: View {
             showHistoryPanel = true
         }
     }
-    
+
     @ViewBuilder
     private var bottomBarLayer: some View {
         if !isLandingPage {

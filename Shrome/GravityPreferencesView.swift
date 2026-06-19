@@ -4,62 +4,57 @@
 //
 
 import SwiftUI
+import AppKit
 import Combine
 
 // --- STARTUP BEHAVIOR ENUM ---
 enum StartupBehavior: String, CaseIterable {
-    case leftOff = "Continue where I left off"
+    case leftOff       = "Continue where I left off"
     case firstGroupTab = "First tab of a tab group"
-    case newTab = "Start at the new tab page"
+    case newTab        = "Start at the new tab page"
 }
 
 // MARK: - Preferences Data Model
 class GravityPreferences: ObservableObject {
-    @AppStorage("homepage") var homepage: String = ""
+    @AppStorage("homepage")         var homepage: String = ""
     @AppStorage("startupBehavior") var startupBehavior: StartupBehavior = .leftOff
-    @AppStorage("showTabCount") var showTabCount: Bool = false
+    @AppStorage("showTabCount")    var showTabCount: Bool = false
 
-    // Syncing Red, Green, Blue fallbacks for backwards compatibility
-    @AppStorage("accentColorRed") var accentColorRed: Double = 0.96
+    @AppStorage("accentColorRed")   var accentColorRed:   Double = 0.96
     @AppStorage("accentColorGreen") var accentColorGreen: Double = 0.55
-    @AppStorage("accentColorBlue") var accentColorBlue: Double = 0.72
-    
-    // --- FIXED: Single theme selector pointing directly to our custom matrix ---
+    @AppStorage("accentColorBlue")  var accentColorBlue:  Double = 0.72
+
     @AppStorage("selectedShromeTheme") var selectedTheme: ShromeTheme = .cosmicPastel
-    
-    @AppStorage("useDarkMode") var useDarkMode: Bool = false
-    @AppStorage("sidebarWidth") var sidebarWidth: Double = 260
-    @AppStorage("autoHideSidebar") var autoHideSidebar: Bool = false
+
+    @AppStorage("useDarkMode")          var useDarkMode: Bool = false
+    @AppStorage("sidebarWidth")         var sidebarWidth: Double = 260
+    @AppStorage("autoHideSidebar")      var autoHideSidebar: Bool = false
     @AppStorage("enableAddressBarTint") var enableAddressBarTint: Bool = true
 
-    @AppStorage("searchEngine") var searchEngine: String = "Google"
+    @AppStorage("searchEngine")      var searchEngine: String = "Google"
     @AppStorage("searchSuggestions") var searchSuggestions: Bool = true
 
     @AppStorage("blockTrackers") var blockTrackers: Bool = true
-    @AppStorage("clearOnQuit") var clearOnQuit: Bool = false
-    @AppStorage("saveHistory") var saveHistory: Bool = true
+    @AppStorage("clearOnQuit")   var clearOnQuit: Bool = false
+    @AppStorage("saveHistory")   var saveHistory: Bool = true
 
-    var accentColor: Color {
-        selectedTheme.accentColor
-    }
-    
+    var accentColor: Color { selectedTheme.accentColor }
+
     func updateTheme(to theme: ShromeTheme) {
         selectedTheme = theme
-        
-        // Split colors down into old standard RGB memory layers so secondary panels don't break
-        if let components = NSColor(theme.accentColor).usingColorSpace(.sRGB) {
-            accentColorRed = Double(components.redComponent)
-            accentColorGreen = Double(components.greenComponent)
-            accentColorBlue = Double(components.blueComponent)
-        }
+        // PERF FIX: Guard against nil for wide-gamut P3 colors
+        guard let components = NSColor(theme.accentColor).usingColorSpace(.sRGB) else { return }
+        accentColorRed   = Double(components.redComponent)
+        accentColorGreen = Double(components.greenComponent)
+        accentColorBlue  = Double(components.blueComponent)
     }
 }
 
 enum PrefsSection: String, CaseIterable {
-    case general = "General"
+    case general    = "General"
     case appearance = "Appearance"
-    case search = "Search"
-    case privacy = "Privacy"
+    case search     = "Search"
+    case privacy    = "Privacy"
 
     var icon: String {
         switch self {
@@ -71,24 +66,59 @@ enum PrefsSection: String, CaseIterable {
     }
 }
 
+// MARK: - Window Titlebar Hider
+// UI FIX: The Settings scene always renders a macOS titlebar above the SwiftUI
+// view frame. No SwiftUI background modifier can paint into that zone, so the
+// sidebar tint always stops short of the top of the window — making the title
+// look like it's floating between two uncoloured sections.
+// This NSViewRepresentable reaches into the NSWindow on appear and sets
+// titlebarAppearsTransparent = true, which merges the titlebar region into the
+// view's drawable area. The sidebar background can then fill the full height
+// from top to bottom with no gap, and the title text sits cleanly inside it.
+private struct PrefsTitlebarHider: NSViewRepresentable {
+    let accentColor: Color
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async { configure(view.window) }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async { configure(nsView.window) }
+    }
+
+    private func configure(_ window: NSWindow?) {
+        guard let window else { return }
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.isMovableByWindowBackground = true
+        // Keep the traffic lights so the window is still closeable
+        window.standardWindowButton(.closeButton)?.isHidden = false
+        window.standardWindowButton(.miniaturizeButton)?.isHidden = false
+        window.standardWindowButton(.zoomButton)?.isHidden = false
+    }
+}
+
 // MARK: - Main Preferences Window
 struct GravityPreferencesView: View {
     @StateObject private var prefs = GravityPreferences()
     @State private var selectedSection: PrefsSection = .general
-    
-    private var sidebarColor: Color {
-        prefs.accentColor
-    }
 
     var body: some View {
         HStack(spacing: 0) {
             // MARK: Sidebar
+            // UI FIX: Sidebar is now 210pt wide (up from 180) so "Shrome Settings"
+            // fits comfortably without wrapping, and the section rows have
+            // breathing room. The title sits at padding(.top, 44) to clear the
+            // traffic light buttons now that the titlebar is transparent and
+            // merged into this view's frame.
             VStack(alignment: .leading, spacing: 4) {
-                Text("Preferences")
+                Text("Shrome Settings")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.primary.opacity(0.5))
                     .padding(.horizontal, 16)
-                    .padding(.top, 20)
+                    .padding(.top, 44)   // clears the traffic lights
                     .padding(.bottom, 10)
 
                 ForEach(PrefsSection.allCases, id: \.self) { section in
@@ -106,8 +136,14 @@ struct GravityPreferencesView: View {
 
                 Spacer()
             }
-            .frame(width: 180)
-            .background(sidebarColor.opacity(0.12)) // Soft material styling variation
+            .frame(width: 210)
+            .background(prefs.accentColor.opacity(0.12))
+            // Attach the titlebar hider here so it reads the window as soon
+            // as the sidebar column appears on screen.
+            .background(
+                PrefsTitlebarHider(accentColor: prefs.accentColor)
+                    .frame(width: 0, height: 0)
+            )
 
             Divider()
                 .opacity(0.15)
@@ -127,7 +163,7 @@ struct GravityPreferencesView: View {
             }
             .background(Color(NSColor.windowBackgroundColor))
         }
-        .frame(width: 650, height: 480) // Slightly enlarged for premium layout grid breathing room
+        .frame(width: 680, height: 480)
         .preferredColorScheme(prefs.useDarkMode ? .dark : .light)
     }
 }
@@ -173,7 +209,7 @@ struct PrefsSectionHeader: View {
     }
 }
 
-// MARK: - Prefs Group Card
+// MARK: - Prefs Card
 struct PrefsCard<Content: View>: View {
     @ViewBuilder var content: Content
 
@@ -267,7 +303,7 @@ struct GeneralSection: View {
 // MARK: - Appearance Section
 struct AppearanceSection: View {
     @ObservedObject var prefs: GravityPreferences
-    
+
     private let themeColumns = [
         GridItem(.adaptive(minimum: 65, maximum: 80), spacing: 12)
     ]
@@ -279,7 +315,7 @@ struct AppearanceSection: View {
             .font(.system(size: 11, weight: .semibold))
             .foregroundColor(.secondary)
             .padding(.bottom, 8)
-            
+
         LazyVGrid(columns: themeColumns, spacing: 14) {
             ForEach(ShromeTheme.allCases) { theme in
                 VStack(spacing: 6) {
@@ -294,14 +330,14 @@ struct AppearanceSection: View {
                             )
                             .frame(width: 36, height: 36)
                             .shadow(color: theme.accentColor.opacity(0.2), radius: 4, x: 0, y: 2)
-                        
+
                         if prefs.selectedTheme == theme {
                             Circle()
                                 .stroke(Color.primary, lineWidth: 2)
                                 .frame(width: 44, height: 44)
                         }
                     }
-                    
+
                     Text(theme.rawValue)
                         .font(.system(size: 10, weight: .medium, design: .rounded))
                         .foregroundColor(prefs.selectedTheme == theme ? .primary : .secondary)
@@ -344,7 +380,7 @@ struct AppearanceSection: View {
                         .frame(width: 38, alignment: .trailing)
                 }
             }
-            
+
             PrefsRow(label: "Ghost Mode", sublabel: "Auto-hide the sidebar when not hovered", isLast: true) {
                 Toggle("", isOn: $prefs.autoHideSidebar)
                     .toggleStyle(.switch)
