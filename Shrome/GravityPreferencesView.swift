@@ -16,6 +16,11 @@ enum StartupBehavior: String, CaseIterable {
 
 // MARK: - Preferences Data Model
 class GravityPreferences: ObservableObject {
+    // Same key NameOnboardingView writes to on first launch — editing it
+    // here just lets the user revisit that choice later instead of being
+    // stuck with whatever they entered (or skipped) on day one.
+    @AppStorage("userPreferredName") var userPreferredName: String = ""
+
     @AppStorage("homepage")         var homepage: String = ""
     @AppStorage("startupBehavior") var startupBehavior: StartupBehavior = .leftOff
     @AppStorage("showTabCount")    var showTabCount: Bool = false
@@ -117,8 +122,8 @@ struct GravityPreferencesView: View {
             // merged into this view's frame.
             VStack(alignment: .leading, spacing: 4) {
                 Text("Shrome Settings")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(.primary.opacity(0.5))
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.primary.opacity(1))
                     .padding(.horizontal, 16)
                     .padding(.top, 44)   // clears the traffic lights
                     .padding(.bottom, 10)
@@ -275,6 +280,13 @@ struct GeneralSection: View {
         PrefsSectionHeader(title: "General")
 
         PrefsCard {
+            PrefsRow(label: "Your name", sublabel: "Used for the greeting on your landing page") {
+                TextField("Skipped", text: $prefs.userPreferredName)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 180)
+                    .font(.system(size: 12))
+            }
+
             PrefsRow(label: "Homepage", sublabel: "Set your default launch portal") {
                 TextField("https://", text: $prefs.homepage)
                     .textFieldStyle(.roundedBorder)
