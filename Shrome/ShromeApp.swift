@@ -70,6 +70,16 @@ struct ShromeApp: App {
                     NotificationCenter.default.post(name: Notification.Name("MenuActionCloseTab"), object: nil)
                 }
                 .keyboardShortcut("w", modifiers: .command)
+
+                Divider()
+
+                // Classic Safari/Chrome "Open Location" shortcut — jumps
+                // focus straight to the address bar with its contents
+                // selected, ready to type over.
+                Button("Open Location...") {
+                    NotificationCenter.default.post(name: Notification.Name("MenuActionFocusAddressBar"), object: nil)
+                }
+                .keyboardShortcut("l", modifiers: .command)
             }
 
             // --- VIEW MENU ---
@@ -92,11 +102,56 @@ struct ShromeApp: App {
 
             SidebarCommands()
 
+            // --- TABS MENU ---
+            // No default system menu for tab navigation to fold into, so —
+            // same reasoning as History below — this is a genuine new
+            // top-level menu rather than a CommandGroup anchor.
+            CommandMenu("Tabs") {
+                Button("Show Next Tab") {
+                    NotificationCenter.default.post(name: Notification.Name("MenuActionNextTab"), object: nil)
+                }
+                .keyboardShortcut(.tab, modifiers: .control)
+
+                Button("Show Previous Tab") {
+                    NotificationCenter.default.post(name: Notification.Name("MenuActionPreviousTab"), object: nil)
+                }
+                .keyboardShortcut(.tab, modifiers: [.control, .shift])
+
+                Divider()
+
+                // ⌘1 through ⌘8 jump straight to that tab position; ⌘9 is
+                // conventionally "last tab" rather than "tab 9" so it still
+                // works sensibly with fewer than 9 tabs open.
+                ForEach(1...8, id: \.self) { number in
+                    Button("Select Tab \(number)") {
+                        NotificationCenter.default.post(name: Notification.Name("MenuActionSelectTab"), object: number)
+                    }
+                    .keyboardShortcut(KeyEquivalent(Character("\(number)")), modifiers: .command)
+                }
+
+                Button("Select Last Tab") {
+                    NotificationCenter.default.post(name: Notification.Name("MenuActionSelectLastTab"), object: nil)
+                }
+                .keyboardShortcut("9", modifiers: .command)
+            }
+
             // --- HISTORY MENU ---
             // CommandMenu is the correct tool here: macOS has no default
             // History menu to fold into, so this genuinely should be a new
             // top-level menu (same pattern Safari/Chrome use).
             CommandMenu("History") {
+                Button("Back") {
+                    NotificationCenter.default.post(name: Notification.Name("MenuActionGoBack"), object: nil)
+                }
+                .keyboardShortcut("[", modifiers: .command)
+
+                Button("Forward") {
+                    NotificationCenter.default.post(name: Notification.Name("MenuActionGoForward"), object: nil)
+                }
+                .keyboardShortcut("]", modifiers: .command)
+
+                Divider()
+
                 Button("Show Complete History Logs...") {
                     NotificationCenter.default.post(name: Notification.Name("MenuActionShowHistory"), object: nil)
                 }

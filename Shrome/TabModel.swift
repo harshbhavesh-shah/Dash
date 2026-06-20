@@ -123,6 +123,44 @@ class TabManager: ObservableObject {
         tabs[index].reloadTrigger = UUID()
     }
 
+    // MARK: - Tab Cycling (⌃Tab / ⌃⇧Tab / ⌘1-9)
+
+    /// Cycles forward through `tabs` in array order, wrapping past the end.
+    func selectNextTab() {
+        guard !tabs.isEmpty else { return }
+        guard let index = tabs.firstIndex(where: { $0.id == activeTabId }) else {
+            activeTabId = tabs[0].id
+            return
+        }
+        activeTabId = tabs[(index + 1) % tabs.count].id
+    }
+
+    /// Cycles backward through `tabs` in array order, wrapping past the start.
+    func selectPreviousTab() {
+        guard !tabs.isEmpty else { return }
+        guard let index = tabs.firstIndex(where: { $0.id == activeTabId }) else {
+            activeTabId = tabs[0].id
+            return
+        }
+        activeTabId = tabs[(index - 1 + tabs.count) % tabs.count].id
+    }
+
+    /// 1-based position, matching the ⌘1...⌘8 shortcuts. Pressing a number
+    /// beyond the current tab count is a no-op — same as Chrome/Safari,
+    /// rather than wrapping or clamping to the last tab.
+    func selectTab(number: Int) {
+        let index = number - 1
+        guard tabs.indices.contains(index) else { return }
+        activeTabId = tabs[index].id
+    }
+
+    /// ⌘9 always jumps to the last open tab regardless of how many are
+    /// open — it means "last tab", not "tab number 9".
+    func selectLastTab() {
+        guard let last = tabs.last else { return }
+        activeTabId = last.id
+    }
+
     // MARK: - Groups
 
     func moveActiveTab(to groupId: UUID?) {

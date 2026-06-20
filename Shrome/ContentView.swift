@@ -297,6 +297,27 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionShowHistory"))) { _ in
             showHistoryPanel = true
         }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionNextTab"))) { _ in
+            withAnimation(.shromeSnappy) {
+                tabManager.selectNextTab()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionPreviousTab"))) { _ in
+            withAnimation(.shromeSnappy) {
+                tabManager.selectPreviousTab()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionSelectTab"))) { notification in
+            guard let number = notification.object as? Int else { return }
+            withAnimation(.shromeSnappy) {
+                tabManager.selectTab(number: number)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionSelectLastTab"))) { _ in
+            withAnimation(.shromeSnappy) {
+                tabManager.selectLastTab()
+            }
+        }
     }
 
     @ViewBuilder

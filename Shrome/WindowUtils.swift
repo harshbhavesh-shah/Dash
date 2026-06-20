@@ -56,13 +56,28 @@ struct WebView: NSViewRepresentable {
         var parent: WebView
         var lastReloadTrigger: UUID
         var urlObservation: NSKeyValueObservation?
-        
+
+        // FIX: Back/Forward (⌘[ / ⌘]) had no plumbing anywhere in the app —
+        // there's no canGoBack/canGoForward state surfaced to a button, so
+        // these are wired directly off the menu's NotificationCenter posts
+        // straight to the live WKWebView, same broadcast style the other
+        // menu actions (New Tab, Reload, etc.) already use. Only one WebView
+        // is ever on screen per window, so there's no ambiguity about which
+        // instance should respond.
+        private var backObserver: NSObjectProtocol?
+        private var forwardObserver: NSObjectProtocol?
+
         init(_ parent: WebView) {
             self.parent = parent
             self.lastReloadTrigger = parent.tab.reloadTrigger
             super.init()
         }
-        
+
+        deinit {
+            if let backObserver { NotificationCenter.default.removeObserver(backObserver) }
+            if let forwardObserver { NotificationCenter.default.removeObserver(forwardObserver) }
+        }
+
         func setupUrlObservation(for webView: WKWebView) {
             urlObservation = webView.observe(\.url, options: [.new]) { [weak self] view, _ in
                 guard let self = self, let newUrl = view.url else { return }
@@ -72,6 +87,20 @@ struct WebView: NSViewRepresentable {
                         self.parent.tab.urlString = newUrl.absoluteString
                     }
                 }
+            }
+
+            backObserver = NotificationCenter.default.addObserver(
+                forName: Notification.Name("MenuActionGoBack"), object: nil, queue: .main
+            ) { [weak webView] _ in
+                guard let webView, webView.canGoBack else { return }
+                webView.goBack()
+            }
+
+            forwardObserver = NotificationCenter.default.addObserver(
+                forName: Notification.Name("MenuActionGoForward"), object: nil, queue: .main
+            ) { [weak webView] _ in
+                guard let webView, webView.canGoForward else { return }
+                webView.goForward()
             }
         }
         

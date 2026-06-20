@@ -44,6 +44,7 @@ struct InlineCompleteTextField: NSViewRepresentable {
         field.cell?.wraps = false
         field.cell?.isScrollable = true
         field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        context.coordinator.setupFocusObserver(for: field)
         return field
     }
 
@@ -80,8 +81,31 @@ struct InlineCompleteTextField: NSViewRepresentable {
     class Coordinator: NSObject, NSTextFieldDelegate {
         var parent: InlineCompleteTextField
 
+        // FIX: ⌘L ("Open Location", classic Safari/Chrome shortcut) has
+        // nowhere else to land — there's no @FocusState plumbed in from
+        // ContentView down to this field. Only one InlineCompleteTextField
+        // is ever on screen at a time (landing page search vs. floating
+        // address bar are mutually exclusive), so listening globally here
+        // is unambiguous: whichever instance exists is the one that should
+        // grab focus.
+        private var focusObserver: NSObjectProtocol?
+
         init(_ parent: InlineCompleteTextField) {
             self.parent = parent
+        }
+
+        deinit {
+            if let focusObserver { NotificationCenter.default.removeObserver(focusObserver) }
+        }
+
+        func setupFocusObserver(for field: GhostTextField) {
+            focusObserver = NotificationCenter.default.addObserver(
+                forName: Notification.Name("MenuActionFocusAddressBar"), object: nil, queue: .main
+            ) { [weak field] _ in
+                guard let field else { return }
+                field.window?.makeFirstResponder(field)
+                field.currentEditor()?.selectAll(nil)
+            }
         }
 
         // Live-sync text changes back to the binding.
