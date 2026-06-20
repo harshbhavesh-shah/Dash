@@ -104,6 +104,13 @@ struct GravityLandingView: View {
     @AppStorage("accentColorGreen") private var g: Double = 0.55
     @AppStorage("accentColorBlue") private var b: Double = 0.72
 
+    // Path to the user's chosen landing page background photo, set from
+    // Preferences > Appearance. We cache the decoded NSImage in @State
+    // (loaded on appear / whenever the path changes) instead of reading
+    // it from disk on every body re-render.
+    @AppStorage(BackgroundImageStore.appStorageKey) private var landingBackgroundImagePath: String = ""
+    @State private var cachedBackgroundImage: NSImage? = nil
+
     @EnvironmentObject var tabManager: TabManager
 
     // --- Inline autocomplete ---
@@ -151,8 +158,27 @@ struct GravityLandingView: View {
 
     var body: some View {
         ZStack {
+            // Custom background photo, if the user has set one in
+            // Preferences > Appearance. Sits beneath everything else and
+            // fills + crops to the available space.
+            if let cachedBackgroundImage {
+                GeometryReader { geo in
+                    Image(nsImage: cachedBackgroundImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .clipped()
+                }
+                .ignoresSafeArea()
+                .transition(.opacity)
+            }
+
+            // Frosted glass wash — full strength over the default window
+            // background, dialed back when a custom photo is set so the
+            // photo stays visible while text on top stays legible.
             Color.clear
                 .background(.ultraThinMaterial)
+                .opacity(cachedBackgroundImage != nil ? 0.55 : 1.0)
                 .ignoresSafeArea()
 
             VStack(spacing: 36) {
@@ -233,8 +259,14 @@ struct GravityLandingView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             if urlString == "about:blank" { urlString = "" }
+            cachedBackgroundImage = BackgroundImageStore.loadImage(at: landingBackgroundImagePath)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 isSearchFieldFocused = true
+            }
+        }
+        .onChange(of: landingBackgroundImagePath) { _, newPath in
+            withAnimation(.easeInOut(duration: 0.25)) {
+                cachedBackgroundImage = BackgroundImageStore.loadImage(at: newPath)
             }
         }
         .onChange(of: urlString) { _, newValue in

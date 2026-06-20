@@ -26,6 +26,8 @@ class GravityPreferences: ObservableObject {
 
     @AppStorage("selectedShromeTheme") var selectedTheme: ShromeTheme = .cosmicPastel
 
+    @AppStorage(BackgroundImageStore.appStorageKey) var landingBackgroundImagePath: String = ""
+
     @AppStorage("useDarkMode")          var useDarkMode: Bool = false
     @AppStorage("sidebarWidth")         var sidebarWidth: Double = 260
     @AppStorage("autoHideSidebar")      var autoHideSidebar: Bool = false
@@ -385,6 +387,63 @@ struct AppearanceSection: View {
                 Toggle("", isOn: $prefs.autoHideSidebar)
                     .toggleStyle(.switch)
                     .labelsHidden()
+            }
+        }
+
+        Text("Landing Page Background")
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundColor(.secondary)
+            .padding(.top, 20)
+            .padding(.bottom, 8)
+
+        PrefsCard {
+            PrefsRow(
+                label: "Custom background photo",
+                sublabel: prefs.landingBackgroundImagePath.isEmpty
+                    ? "Show a photo behind your new tab page"
+                    : "Your photo replaces the default glass backdrop",
+                isLast: prefs.landingBackgroundImagePath.isEmpty
+            ) {
+                HStack(spacing: 10) {
+                    if !prefs.landingBackgroundImagePath.isEmpty,
+                       let preview = BackgroundImageStore.loadImage(at: prefs.landingBackgroundImagePath) {
+                        Image(nsImage: preview)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 44, height: 30)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                            )
+                    }
+
+                    Button("Choose Image…") {
+                        if let path = BackgroundImageStore.pickAndSaveImage() {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                                prefs.landingBackgroundImagePath = path
+                            }
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    .font(.system(size: 12))
+                }
+            }
+
+            if !prefs.landingBackgroundImagePath.isEmpty {
+                PrefsRow(label: "Remove background photo", isLast: true) {
+                    Button(role: .destructive) {
+                        BackgroundImageStore.clearStoredFile()
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                            prefs.landingBackgroundImagePath = ""
+                        }
+                    } label: {
+                        Label("Remove", systemImage: "trash")
+                            .font(.system(size: 12))
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundColor(.red.opacity(0.8))
+                }
             }
         }
     }
