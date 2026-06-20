@@ -18,6 +18,13 @@ struct ContentView: View {
     @AppStorage("autoHideSidebar") private var autoHideSidebar: Bool = false
     @AppStorage("searchEngine") private var searchEngine: String = "Google"
 
+    // The name shown in the landing page greeting, captured once via
+    // NameOnboardingView on first launch. hasCompletedNameOnboarding is
+    // tracked separately from the name itself so skipping (leaving the
+    // name blank) doesn't cause the prompt to keep reappearing.
+    @AppStorage("userPreferredName") private var userPreferredName: String = ""
+    @AppStorage("hasCompletedNameOnboarding") private var hasCompletedNameOnboarding: Bool = false
+
     @Environment(\.isPrivateWindow) private var isPrivateWindow
     @Environment(\.openWindow) private var openWindow
     @Environment(\.managedObjectContext) private var viewContext
@@ -204,6 +211,22 @@ struct ContentView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .zIndex(100)
+            }
+
+            // LAYER 5: First-Launch Name Onboarding
+            // Regular windows only — a private window has nothing to
+            // personalize, since it always greets as "Stranger" regardless
+            // of the stored name.
+            if !isPrivateWindow && !hasCompletedNameOnboarding {
+                NameOnboardingView { name in
+                    withAnimation(.shromeBouncy) {
+                        userPreferredName = name
+                        hasCompletedNameOnboarding = true
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                .zIndex(200)
             }
         }
         .background(

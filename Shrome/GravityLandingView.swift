@@ -145,6 +145,10 @@ struct GravityLandingView: View {
     // glow stays gently alive without ever being told to stop.
     @State private var isGlowPulsing = false
 
+    // Set once via NameOnboardingView on first launch (or left blank if
+    // the user skipped it) — falls back to a name-less greeting below.
+    @AppStorage("userPreferredName") private var userPreferredName: String = ""
+
     @EnvironmentObject var tabManager: TabManager
 
     // --- Inline autocomplete ---
@@ -165,11 +169,16 @@ struct GravityLandingView: View {
     }
 
     private var dynamicGreeting: String {
-        let name = isPrivateSession ? "Stranger" : "Harshie"
         let hour = Calendar.current.component(.hour, from: Date())
-        if hour < 12 { return "Good morning, \(name)" }
-        if hour < 17 { return "Good afternoon, \(name)" }
-        return "Good evening, \(name)"
+        let timeOfDay: String
+        if hour < 12 { timeOfDay = "Good morning" }
+        else if hour < 17 { timeOfDay = "Good afternoon" }
+        else { timeOfDay = "Good evening" }
+
+        if isPrivateSession { return "\(timeOfDay), Stranger" }
+
+        let trimmedName = userPreferredName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedName.isEmpty ? timeOfDay : "\(timeOfDay), \(trimmedName)"
     }
 
     private var dynamicSubheader: String {
