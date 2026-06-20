@@ -26,7 +26,7 @@ struct SidebarView: View {
                     .padding(.top, 30)
 
                 Button(action: {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    withAnimation(.shromeSnappy) {
                         isVisible.toggle()
                     }
                 }) {
@@ -35,16 +35,20 @@ struct SidebarView: View {
                         .foregroundColor(.primary.opacity(0.6))
                         .frame(width: isVisible ? 80 : 55, height: 35)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bouncy)
 
-                Button(action: { tabManager.createNewTab() }) {
+                Button(action: {
+                    withAnimation(.shromeBouncy) {
+                        tabManager.createNewTab()
+                    }
+                }) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 22))
                         .foregroundColor(accentColor)
                         .shadow(color: accentColor.opacity(0.5), radius: 8)
                         .frame(width: isVisible ? 80 : 55)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bouncy)
 
                 if !isVisible {
                     Spacer().frame(height: 10)
@@ -103,18 +107,20 @@ struct SidebarView: View {
                                     isActive: tabManager.activeTabId == tab.id,
                                     groups: tabManager.groups,
                                     onActivate: {
-                                        withAnimation(.snappy) {
+                                        withAnimation(.shromeSnappy) {
                                             tabManager.activeTabId = tab.id
                                         }
                                     },
                                     onClose: {
-                                        withAnimation(.spring()) {
+                                        withAnimation(.shromeSnappy) {
                                             tabManager.closeTab(id: tab.id)
                                         }
                                     },
                                     onMoveToGroup: { groupId in
                                         if let idx = tabManager.tabs.firstIndex(where: { $0.id == tab.id }) {
-                                            tabManager.tabs[idx].groupId = groupId
+                                            withAnimation(.shromeSnappy) {
+                                                tabManager.tabs[idx].groupId = groupId
+                                            }
                                             tabManager.saveSession()
                                         }
                                     }
@@ -196,7 +202,7 @@ struct TabRow: View {
                             .font(.system(size: 14))
                             .foregroundColor(.primary.opacity(0.3))
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.bouncy)
                     .transition(.scale.combined(with: .opacity))
                 } else if isActive {
                     Circle()
@@ -218,8 +224,8 @@ struct TabRow: View {
             }
         )
         .cornerRadius(14)
-        .scaleEffect(isHovered ? 1.02 : 1.0)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHovered)
+        .scaleEffect(isHovered ? 1.035 : 1.0)
+        .animation(.shromeSnappy, value: isHovered)
         .onHover { hovering in
             isHovered = hovering
             if hovering { NSCursor.pointingHand.push() }
@@ -307,7 +313,7 @@ struct CircleButton: View {
         .frame(width: 12, height: 12)
         .scaleEffect(isHovered ? 1.25 : 1.0)
         .shadow(color: color.opacity(isHovered ? 0.6 : 0), radius: isHovered ? 6 : 0, x: 0, y: 2)
-        .animation(.spring(response: 0.25, dampingFraction: 0.5), value: isHovered)
+        .animation(.shromePop, value: isHovered)
         .onHover { hovering in
             isHovered = hovering
             if hovering { NSCursor.pointingHand.push() }

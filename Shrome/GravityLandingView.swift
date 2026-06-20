@@ -10,10 +10,19 @@ import SwiftUI
 private struct GlassFavoriteTile: View {
     let site: (name: String, url: String, icon: String)
     let isPrivateSession: Bool
+    let hasBackgroundPhoto: Bool
     let onSubmit: (String) -> Void
 
     @State private var isHovered = false
     @State private var isPressed = false
+
+    // `site.url` is stored as a bare host (e.g. "youtube.com"), so it can
+    // be handed straight to the favicon service — same approach the
+    // sidebar's tab rows already use for their favicons.
+    private var faviconURL: URL? {
+        guard !site.url.isEmpty else { return nil }
+        return URL(string: "https://www.google.com/s2/favicons?sz=128&domain=\(site.url)")
+    }
 
     var body: some View {
         VStack(spacing: 10) {
@@ -43,16 +52,35 @@ private struct GlassFavoriteTile: View {
                     )
                     .frame(width: 56, height: 56)
 
-                // Icon
-                Image(systemName: site.icon)
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundStyle(
-                        isPrivateSession
-                            ? Color.purple
-                            : Color.primary.opacity(isHovered ? 1.0 : 0.88)
-                    )
-                    // Nudge icon up very slightly on hover, like a physical press
-                    .offset(y: isHovered ? -1 : 0)
+                // Icon: the site's real favicon when it loads, falling back
+                // to the tile's curated SF Symbol if the fetch fails — and,
+                // in private sessions, skipping the network request
+                // entirely so browsing intent never leaks via a favicon
+                // lookup, using the symbol straight away instead.
+                Group {
+                    if isPrivateSession {
+                        Image(systemName: site.icon)
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundStyle(Color.purple)
+                    } else {
+                        AsyncImage(url: faviconURL) { phase in
+                            if let image = phase.image {
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 26, height: 26)
+                                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                            } else {
+                                Image(systemName: site.icon)
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundStyle(Color.primary.opacity(isHovered ? 1.0 : 0.88))
+                            }
+                        }
+                        .id(site.url)
+                    }
+                }
+                // Nudge icon up very slightly on hover, like a physical press
+                .offset(y: isHovered ? -1 : 0)
             }
             // Shadow deepens on hover to increase the sense of lift
             .shadow(
@@ -64,12 +92,13 @@ private struct GlassFavoriteTile: View {
             .shadow(color: .black.opacity(0.08), radius: 2, x: 0, y: 1)
             // Slight scale-up on hover, quick spring snap
             .scaleEffect(isPressed ? 0.93 : (isHovered ? 1.06 : 1.0))
-            .animation(.spring(response: 0.25, dampingFraction: 0.65), value: isHovered)
-            .animation(.spring(response: 0.15, dampingFraction: 0.7), value: isPressed)
+            .animation(.shromeSnappy, value: isHovered)
+            .animation(.shromePop, value: isPressed)
 
             Text(site.name)
                 .font(.system(size: 11, weight: .medium, design: .rounded))
                 .foregroundColor(.secondary.opacity(isHovered ? 1.0 : 0.8))
+                .shadow(color: .black.opacity(hasBackgroundPhoto ? 0.35 : 0), radius: 6, x: 0, y: 1)
                 .animation(.easeOut(duration: 0.15), value: isHovered)
         }
         .contentShape(Circle())
@@ -83,7 +112,7 @@ private struct GlassFavoriteTile: View {
                 .onChanged { _ in isPressed = true }
                 .onEnded { _ in
                     isPressed = false
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                    withAnimation(.shromeBouncy) {
                         onSubmit(site.url)
                     }
                 }
@@ -111,6 +140,11 @@ struct GravityLandingView: View {
     @AppStorage(BackgroundImageStore.appStorageKey) private var landingBackgroundImagePath: String = ""
     @State private var cachedBackgroundImage: NSImage? = nil
 
+    // Drives the slow breathing pulse on the search bar's ambient glow —
+    // toggled once on appear into a forever-repeating animation, so the
+    // glow stays gently alive without ever being told to stop.
+    @State private var isGlowPulsing = false
+
     @EnvironmentObject var tabManager: TabManager
 
     // --- Inline autocomplete ---
@@ -121,6 +155,13 @@ struct GravityLandingView: View {
 
     private var isPrivateSession: Bool {
         tabManager.activeTab.isPrivate
+    }
+
+    // Drives the readability boosts below — text shadow, vignette, and a
+    // touch more glass tint — so none of it affects the default look when
+    // there's no custom photo behind the page.
+    private var hasBackgroundPhoto: Bool {
+        cachedBackgroundImage != nil
     }
 
     private var dynamicGreeting: String {
@@ -170,7 +211,7 @@ struct GravityLandingView: View {
                         .clipped()
                 }
                 .ignoresSafeArea()
-                .transition(.opacity)
+                .transition(.scale(scale: 1.06).combined(with: .opacity))
             }
 
             // Frosted glass wash — full strength over the default window
@@ -181,16 +222,33 @@ struct GravityLandingView: View {
                 .opacity(cachedBackgroundImage != nil ? 0.55 : 1.0)
                 .ignoresSafeArea()
 
+            // Soft vignette centered on the content column. Only kicks in
+            // with a photo behind it — gives the greeting/search bar/tiles
+            // a darker patch to sit on without flattening the whole photo
+            // the way a full-screen scrim would.
+            if hasBackgroundPhoto {
+                RadialGradient(
+                    colors: [Color.black.opacity(0.28), Color.black.opacity(0.0)],
+                    center: .center,
+                    startRadius: 40,
+                    endRadius: 420
+                )
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+            }
+
             VStack(spacing: 36) {
                 // Greeting header
                 VStack(spacing: 6) {
                     Text(dynamicGreeting)
                         .font(.system(size: 34, weight: .bold, design: .rounded))
                         .foregroundColor(.primary)
+                        .shadow(color: .black.opacity(hasBackgroundPhoto ? 0.4 : 0), radius: 10, x: 0, y: 2)
 
                     Text(dynamicSubheader)
                         .font(.system(size: 14, weight: .medium, design: .rounded))
                         .foregroundColor(.secondary.opacity(0.7))
+                        .shadow(color: .black.opacity(hasBackgroundPhoto ? 0.35 : 0), radius: 8, x: 0, y: 1)
                 }
                 .padding(.bottom, 8)
 
@@ -221,11 +279,16 @@ struct GravityLandingView: View {
                 .matchedGeometryEffect(id: "sharedAddressBarKey", in: namespace)
                 .frame(width: 550, height: 48)
                 .background {
-                    Color.clear
-                        .glassEffect(
-                            .regular.tint(accentColor.opacity(0.06)),
-                            in: Capsule()
-                        )
+                    ZStack {
+                        if hasBackgroundPhoto {
+                            Capsule().fill(Color.black.opacity(0.16))
+                        }
+                        Color.clear
+                            .glassEffect(
+                                .regular.tint(accentColor.opacity(hasBackgroundPhoto ? 0.10 : 0.06)),
+                                in: Capsule()
+                            )
+                    }
                 }
                 .background {
                     Capsule()
@@ -240,6 +303,28 @@ struct GravityLandingView: View {
                         .blur(radius: 35)
                         .opacity(0.85)
                 }
+                // Ambient glow — sits furthest back so it projects outward
+                // beyond the capsule's own edges, in the active theme's
+                // accent color. Two stacked blurs (tighter + much wider)
+                // give it a softer falloff than a single blur would, and a
+                // slow breathing pulse keeps it gently alive to draw the
+                // eye without being distracting.
+                .background {
+                    ZStack {
+                        Capsule()
+                            .fill(accentColor)
+                            .frame(width: 580, height: 64)
+                            .blur(radius: 32)
+                            .opacity(isGlowPulsing ? 0.30 : 0.18)
+
+                        Capsule()
+                            .fill(accentColor)
+                            .frame(width: 660, height: 90)
+                            .blur(radius: 60)
+                            .opacity(isGlowPulsing ? 0.22 : 0.10)
+                    }
+                    .allowsHitTesting(false)
+                }
                 .shadow(color: .black.opacity(0.02), radius: 15, x: 0, y: 8)
 
                 // Favourite tiles
@@ -248,6 +333,7 @@ struct GravityLandingView: View {
                         GlassFavoriteTile(
                             site: site,
                             isPrivateSession: isPrivateSession,
+                            hasBackgroundPhoto: hasBackgroundPhoto,
                             onSubmit: onSubmit
                         )
                     }
@@ -255,17 +341,26 @@ struct GravityLandingView: View {
                 .padding(.top, 12)
                 .transition(.opacity)
             }
+
+            // Liquid glass clock — floats independently of the centered
+            // greeting/search column, top-right, roughly the footprint of
+            // the Music widget in macOS Control Center.
+            LiquidGlassClockPanel(hasBackgroundPhoto: hasBackgroundPhoto)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .padding(28)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
-            if urlString == "about:blank" { urlString = "" }
             cachedBackgroundImage = BackgroundImageStore.loadImage(at: landingBackgroundImagePath)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 isSearchFieldFocused = true
             }
+            withAnimation(.easeInOut(duration: 2.6).repeatForever(autoreverses: true)) {
+                isGlowPulsing = true
+            }
         }
         .onChange(of: landingBackgroundImagePath) { _, newPath in
-            withAnimation(.easeInOut(duration: 0.25)) {
+            withAnimation(.shromeBouncy) {
                 cachedBackgroundImage = BackgroundImageStore.loadImage(at: newPath)
             }
         }

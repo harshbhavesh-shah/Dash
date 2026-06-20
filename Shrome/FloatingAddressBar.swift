@@ -73,7 +73,7 @@ struct FloatingAddressBar: View {
                         .font(.system(size: 13, weight: .black))
                         .foregroundColor(isCurrentPageFavorited ? .red : Color(NSColor.labelColor).opacity(0.6))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bouncy)
                 .transition(.scale.combined(with: .opacity))
             }
 
@@ -82,7 +82,7 @@ struct FloatingAddressBar: View {
                     .font(.system(size: 13, weight: .black))
                     .foregroundColor(Color(NSColor.labelColor).opacity(0.6))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.bouncy)
         }
         .padding(.horizontal, 25)
         .padding(.vertical, 16)
@@ -109,7 +109,7 @@ struct FloatingAddressBar: View {
                 .strokeBorder(Color.primary.opacity(0.09), lineWidth: 1)
         }
         .shadow(color: isPrivate ? .purple.opacity(0.1) : .black.opacity(0.05), radius: 12, x: 0, y: 6)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isCurrentPageFavorited)
+        .animation(.shromePop, value: isCurrentPageFavorited)
         .onAppear {
             cachedFavorites = decodeFavorites(from: customFavoritesJSON)
         }
@@ -183,7 +183,7 @@ struct FloatingAddressBar: View {
 
         if let encodedData = try? JSONEncoder().encode(currentList),
            let jsonString = String(data: encodedData, encoding: .utf8) {
-            withAnimation(.spring()) {
+            withAnimation(.shromeSnappy) {
                 customFavoritesJSON = jsonString
             }
         }

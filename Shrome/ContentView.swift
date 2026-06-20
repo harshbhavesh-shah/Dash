@@ -72,7 +72,7 @@ struct ContentView: View {
         hideTask?.cancel()
 
         if isHovering {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+            withAnimation(.shromeSnappy) {
                 isEdgeHovered = true
             }
         } else {
@@ -80,7 +80,7 @@ struct ContentView: View {
                 try? await Task.sleep(nanoseconds: 1_500_000_000)
                 if !Task.isCancelled {
                     await MainActor.run {
-                        withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                        withAnimation(.shromeSnappy) {
                             isEdgeHovered = false
                         }
                     }
@@ -100,11 +100,11 @@ struct ContentView: View {
             displayURLString = tabManager.activeTab.urlString
         }
 
-        withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) { }
+        withAnimation(.shromeBouncy) { }
 
         if autoHideSidebar && !isSidebarVisible {
             hideTask?.cancel()
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            withAnimation(.shromeSnappy) {
                 isEdgeHovered = false
             }
         }
@@ -119,7 +119,7 @@ struct ContentView: View {
             context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, authError in
                 DispatchQueue.main.async {
                     if success {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        withAnimation(.shromeBouncy) {
                             self.isPrivateWindowUnlocked = true
                         }
                     } else {
@@ -247,7 +247,7 @@ struct ContentView: View {
                 displayURLString = newValue
             }
         }
-        .animation(.spring(response: 0.48, dampingFraction: 0.82), value: isLandingPage)
+        .animation(.shromeBouncy, value: isLandingPage)
         .preferredColorScheme((useDarkMode || tabManager.activeTab.isPrivate) ? .dark : .light)
         .sheet(isPresented: $showHistoryPanel) {
             HistoryView(tabManager: tabManager) {
@@ -256,7 +256,7 @@ struct ContentView: View {
             .environment(\.managedObjectContext, viewContext)
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionNewTab"))) { _ in
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+            withAnimation(.shromeBouncy) {
                 tabManager.createNewTab(isPrivate: isPrivateWindow)
             }
         }
@@ -267,7 +267,7 @@ struct ContentView: View {
             tabManager.reloadActiveTab()
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionToggleSidebar"))) { _ in
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            withAnimation(.shromeSnappy) {
                 isSidebarVisible.toggle()
             }
         }

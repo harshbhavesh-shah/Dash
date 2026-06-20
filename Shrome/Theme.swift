@@ -57,6 +57,52 @@ extension View {
     }
 }
 
+// --- MOTION: SHROME'S SHARED ANIMATION LANGUAGE ---
+// One small set of named springs used everywhere instead of one-off
+// response/dampingFraction values scattered across files. Lower damping
+// fractions here than you'd usually reach for — that's intentional, it's
+// what gives the UI its playful little overshoot instead of settling flatly.
+extension Animation {
+    /// Shrome's signature motion: a confident, slightly overshooting spring
+    /// for the "big" moments — page swaps, sidebar slides, the address bar
+    /// morphing between landing search and floating bar, the private-window
+    /// unlock reveal. Bouncy enough to feel alive, controlled enough to stay clean.
+    static var shromeBouncy: Animation {
+        .spring(response: 0.42, dampingFraction: 0.68)
+    }
+
+    /// A lighter, quicker bounce for everyday state changes — hover reveals,
+    /// toggles, tab activation/closing, row highlights. The workhorse spring.
+    static var shromeSnappy: Animation {
+        .spring(response: 0.3, dampingFraction: 0.62)
+    }
+
+    /// A tiny, punchy pop for direct touch/click feedback — button presses,
+    /// icon taps, favorite hearts. Fast in, fast out, unmistakable overshoot.
+    static var shromePop: Animation {
+        .spring(response: 0.22, dampingFraction: 0.55)
+    }
+}
+
+/// A reusable press style: scales a button down on press and springs it back
+/// on release. Drop onto any `.plain` or `.borderless` button with
+/// `.buttonStyle(.bouncy)` to get tactile feedback for free, instead of
+/// hand-rolling isPressed state per button.
+struct BouncyButtonStyle: ButtonStyle {
+    var pressedScale: CGFloat = 0.9
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? pressedScale : 1.0)
+            .animation(.shromePop, value: configuration.isPressed)
+    }
+}
+
+extension ButtonStyle where Self == BouncyButtonStyle {
+    static var bouncy: BouncyButtonStyle { BouncyButtonStyle() }
+    static func bouncy(scale: CGFloat) -> BouncyButtonStyle { BouncyButtonStyle(pressedScale: scale) }
+}
+
 // --- NEW: THE GLOBAL CODESPACE THEME MATRIX ---
 enum ShromeTheme: String, CaseIterable, Identifiable, Codable {
     case cosmicPastel   = "Cosmic Pastel"

@@ -18,7 +18,17 @@ struct BrowserView: View {
             if tabManager.activeTab.url.absoluteString == "about:blank" {
                 GravityLandingView(
                     urlString: Binding(
-                        get: { tabManager.activeTab.urlString },
+                        get: {
+                            // Map "about:blank" to "" here rather than
+                            // mutating the tab's stored urlString on
+                            // appear — GravityLandingView doesn't remount
+                            // when switching between two blank tabs (it's
+                            // the same view identity), so a one-time
+                            // appear-based clear only ever worked for the
+                            // first blank tab anyone visited.
+                            let current = tabManager.activeTab.urlString
+                            return current == "about:blank" ? "" : current
+                        },
                         set: { newValue in
                             if let index = tabManager.tabs.firstIndex(where: { $0.id == tabManager.activeTabId }) {
                                 tabManager.tabs[index].urlString = newValue
@@ -27,7 +37,7 @@ struct BrowserView: View {
                     ),
                     namespace: namespace
                 ) { newUrl in
-                    withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) {
+                    withAnimation(.shromeBouncy) {
                         // --- FIXED: Pass the storage token here too ---
                         tabManager.updateActiveUrl(urlString: newUrl, searchEngine: searchEngine)
                         isSidebarVisible = false

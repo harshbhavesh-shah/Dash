@@ -130,7 +130,7 @@ struct GravityPreferencesView: View {
                         accentColor: prefs.accentColor
                     )
                     .onTapGesture {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                        withAnimation(.shromeSnappy) {
                             selectedSection = section
                         }
                     }
@@ -347,7 +347,7 @@ struct AppearanceSection: View {
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                    withAnimation(.shromeBouncy) {
                         prefs.updateTheme(to: theme)
                     }
                 }
@@ -420,7 +420,7 @@ struct AppearanceSection: View {
 
                     Button("Choose Image…") {
                         if let path = BackgroundImageStore.pickAndSaveImage() {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                            withAnimation(.shromeSnappy) {
                                 prefs.landingBackgroundImagePath = path
                             }
                         }
@@ -434,14 +434,14 @@ struct AppearanceSection: View {
                 PrefsRow(label: "Remove background photo", isLast: true) {
                     Button(role: .destructive) {
                         BackgroundImageStore.clearStoredFile()
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                        withAnimation(.shromeSnappy) {
                             prefs.landingBackgroundImagePath = ""
                         }
                     } label: {
                         Label("Remove", systemImage: "trash")
                             .font(.system(size: 12))
                     }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.bouncy)
                     .foregroundColor(.red.opacity(0.8))
                 }
             }
@@ -513,7 +513,7 @@ struct PrivacySection: View {
                 Label("Clear All Data Now", systemImage: "trash")
                     .font(.system(size: 12, weight: .medium))
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.bouncy)
             .foregroundColor(.red.opacity(0.8))
         }
     }
