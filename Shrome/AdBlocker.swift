@@ -63,7 +63,48 @@ class AdBlocker: ObservableObject {
         (function() {
             if (!window.location.hostname.includes('youtube.com')) return;
 
-            const SKIP_SELECTORS = '.ytp-ad-skip-button, .ytp-ad-skip-button-modern, .ytp-skip-ad-button, .ytp-ad-skip-button-container button, button.ytp-ad-overlay-close-button';
+            // NOTE: .videoAdUiSkipButton added for embedded (iframe) players on
+            // third-party sites, which is a real surface this script reaches
+            // since the WKUserScript is forMainFrameOnly: false. The watch-page
+            // player uses the .ytp-* classes; the embed player uses this one.
+            const SKIP_SELECTORS = '.ytp-ad-skip-button, .ytp-ad-skip-button-modern, .ytp-skip-ad-button, .ytp-ad-skip-button-container button, button.ytp-ad-overlay-close-button, .videoAdUiSkipButton';
+
+            // FIX: The root cause of skip-button clicks silently doing
+            // nothing — element.click() only dispatches a synthetic 'click'
+            // event. YouTube's player controls are Material/Polymer-style
+            // components that commonly bind their real handler to
+            // 'pointerdown'/'pointerup' (to feel instant, skipping the
+            // ~300ms click delay), not 'click'. A bare .click() can land on
+            // a button that's visibly there and "clickable" looking, while
+            // the actual skip handler never fires. Dispatching a full
+            // pointer+mouse event sequence at the button's real coordinates
+            // covers every common handler style.
+            function simulateClick(el) {
+                const rect = el.getBoundingClientRect();
+                const x = rect.left + rect.width / 2;
+                const y = rect.top + rect.height / 2;
+                const opts = {
+                    bubbles: true,
+                    cancelable: true,
+                    composed: true,
+                    view: window,
+                    clientX: x,
+                    clientY: y
+                };
+
+                try {
+                    el.dispatchEvent(new PointerEvent('pointerover', opts));
+                    el.dispatchEvent(new PointerEvent('pointerdown', { ...opts, button: 0 }));
+                    el.dispatchEvent(new MouseEvent('mousedown', { ...opts, button: 0 }));
+                    el.dispatchEvent(new PointerEvent('pointerup', { ...opts, button: 0 }));
+                    el.dispatchEvent(new MouseEvent('mouseup', { ...opts, button: 0 }));
+                    el.dispatchEvent(new MouseEvent('click', { ...opts, button: 0 }));
+                } catch (e) {
+                    // PointerEvent unsupported in this context — fall back
+                    // to the plain method call rather than failing silently.
+                    el.click();
+                }
+            }
 
             // FIX: Broader, more reliable ad-state detection. The previous
             // version only checked three selectors that don't all apply
@@ -84,8 +125,13 @@ class AdBlocker: ObservableObject {
                 const video = document.querySelector('video');
                 const skipButton = document.querySelector(SKIP_SELECTORS);
 
-                if (skipButton) {
-                    skipButton.click();
+                // Some skip buttons sit in the DOM disabled/greyed-out during
+                // the mandatory pre-skip countdown before becoming
+                // interactive — clicking then is a no-op, so only fire once
+                // it's actually enabled (the 250ms poll below will catch it
+                // the moment it flips).
+                if (skipButton && skipButton.getAttribute('aria-disabled') !== 'true' && !skipButton.disabled) {
+                    simulateClick(skipButton);
                 }
 
                 if (video && isAdShowing()) {
