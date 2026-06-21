@@ -147,6 +147,39 @@ struct GravityLandingView: View {
     // the user skipped it) — falls back to a name-less greeting below.
     @AppStorage("userPreferredName") private var userPreferredName: String = ""
 
+    // FIX: Picked once per landing-page mount (see onAppear below) rather
+    // than recomputed in dynamicGreeting itself — dynamicGreeting gets
+    // re-evaluated on practically every render (autocomplete updates, glow
+    // pulse animation, etc.), and a computed property would re-roll the
+    // phrase constantly, flickering between variants instead of settling
+    // on one for the session.
+    @State private var selectedGreetingPhrase: String = "Good day"
+
+    private static let morningPhrases = [
+        "Good morning", "Rise and shine", "Top of the morning", "Morning"
+    ]
+    private static let afternoonPhrases = [
+        "Good afternoon", "Afternoon", "Hope your day's going well", "Hey there"
+    ]
+    private static let eveningPhrases = [
+        "Good evening", "Evening", "Welcome back", "Hope you had a good day"
+    ]
+    private static let nightPhrases = [
+        "Still up", "Burning the midnight oil", "Welcome to the late shift", "Quiet hours"
+    ]
+
+    private func randomGreetingPhrase() -> String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        let pool: [String]
+        switch hour {
+        case 5..<12:  pool = Self.morningPhrases
+        case 12..<17: pool = Self.afternoonPhrases
+        case 17..<22: pool = Self.eveningPhrases
+        default:      pool = Self.nightPhrases
+        }
+        return pool.randomElement() ?? "Hello"
+    }
+
     @EnvironmentObject var tabManager: TabManager
 
     // --- Inline autocomplete ---
@@ -167,16 +200,10 @@ struct GravityLandingView: View {
     }
 
     private var dynamicGreeting: String {
-        let hour = Calendar.current.component(.hour, from: Date())
-        let timeOfDay: String
-        if hour < 12 { timeOfDay = "Good morning" }
-        else if hour < 17 { timeOfDay = "Good afternoon" }
-        else { timeOfDay = "Good evening" }
-
-        if isPrivateSession { return "\(timeOfDay), Stranger" }
+        if isPrivateSession { return "\(selectedGreetingPhrase), Stranger" }
 
         let trimmedName = userPreferredName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmedName.isEmpty ? timeOfDay : "\(timeOfDay), \(trimmedName)"
+        return trimmedName.isEmpty ? selectedGreetingPhrase : "\(selectedGreetingPhrase), \(trimmedName)"
     }
 
     private var dynamicSubheader: String {
@@ -360,6 +387,7 @@ struct GravityLandingView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             cachedBackgroundImage = BackgroundImageStore.loadImage(at: landingBackgroundImagePath)
+            selectedGreetingPhrase = randomGreetingPhrase()
             withAnimation(.easeInOut(duration: 2.6).repeatForever(autoreverses: true)) {
                 isGlowPulsing = true
             }

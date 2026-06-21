@@ -14,6 +14,16 @@ enum StartupBehavior: String, CaseIterable {
     case newTab        = "Start at the new tab page"
 }
 
+// --- APPEARANCE MODE ENUM ---
+// .automatic defers to SunAppearanceManager, which computes today's
+// sunrise/sunset for the device's approximate location and flips the
+// appearance live at the right moment — see SunAppearance.swift.
+enum AppearanceMode: String, CaseIterable {
+    case light     = "Light"
+    case dark      = "Dark"
+    case automatic = "Automatic (Sunset)"
+}
+
 // MARK: - Preferences Data Model
 class GravityPreferences: ObservableObject {
     // Same key NameOnboardingView writes to on first launch — editing it
@@ -33,7 +43,7 @@ class GravityPreferences: ObservableObject {
 
     @AppStorage(BackgroundImageStore.appStorageKey) var landingBackgroundImagePath: String = ""
 
-    @AppStorage("useDarkMode")          var useDarkMode: Bool = false
+    @AppStorage("appearanceMode")        var appearanceMode: AppearanceMode = .light
     @AppStorage("sidebarWidth")         var sidebarWidth: Double = 260
     @AppStorage("autoHideSidebar")      var autoHideSidebar: Bool = false
     @AppStorage("enableAddressBarTint") var enableAddressBarTint: Bool = true
@@ -112,6 +122,19 @@ struct GravityPreferencesView: View {
     @StateObject private var prefs = GravityPreferences()
     @State private var selectedSection: PrefsSection = .general
 
+    // Live day/night state for Automatic appearance — observed here too so
+    // the Preferences window itself flips at sunset/sunrise in real time,
+    // not just the main browser window.
+    @ObservedObject private var sunAppearance = SunAppearanceManager.shared
+
+    private var isDarkActive: Bool {
+        switch prefs.appearanceMode {
+        case .light:     return false
+        case .dark:      return true
+        case .automatic: return sunAppearance.isNightTime
+        }
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             // MARK: Sidebar
@@ -122,8 +145,8 @@ struct GravityPreferencesView: View {
             // merged into this view's frame.
             VStack(alignment: .leading, spacing: 4) {
                 Text("Shrome Settings")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.primary.opacity(1))
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.primary.opacity(0.5))
                     .padding(.horizontal, 16)
                     .padding(.top, 44)   // clears the traffic lights
                     .padding(.bottom, 10)
@@ -171,7 +194,12 @@ struct GravityPreferencesView: View {
             .background(Color(NSColor.windowBackgroundColor))
         }
         .frame(width: 680, height: 480)
-        .preferredColorScheme(prefs.useDarkMode ? .dark : .light)
+        .preferredColorScheme(isDarkActive ? .dark : .light)
+        .onAppear {
+            if prefs.appearanceMode == .automatic {
+                SunAppearanceManager.shared.activate()
+            }
+        }
     }
 }
 
@@ -317,10 +345,18 @@ struct GeneralSection: View {
 // MARK: - Appearance Section
 struct AppearanceSection: View {
     @ObservedObject var prefs: GravityPreferences
+    @ObservedObject private var sunAppearance = SunAppearanceManager.shared
 
     private let themeColumns = [
         GridItem(.adaptive(minimum: 65, maximum: 80), spacing: 12)
     ]
+
+    private var appearanceSublabel: String {
+        if prefs.appearanceMode == .automatic && sunAppearance.locationUnavailable {
+            return "Location access is needed for sunset-based switching — enable it in System Settings > Privacy & Security > Location Services."
+        }
+        return "Choose how Shrome looks, or let it follow sunrise and sunset automatically"
+    }
 
     var body: some View {
         PrefsSectionHeader(title: "Appearance")
@@ -372,10 +408,20 @@ struct AppearanceSection: View {
         .padding(.bottom, 20)
 
         PrefsCard {
-            PrefsRow(label: "Dark mode", sublabel: "Switch Shrome to a dark appearance") {
-                Toggle("", isOn: $prefs.useDarkMode)
-                    .toggleStyle(.switch)
-                    .labelsHidden()
+            PrefsRow(label: "Appearance", sublabel: appearanceSublabel) {
+                Picker("", selection: $prefs.appearanceMode) {
+                    ForEach(AppearanceMode.allCases, id: \.self) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(width: 200)
+                .labelsHidden()
+                .onChange(of: prefs.appearanceMode) { _, newMode in
+                    if newMode == .automatic {
+                        SunAppearanceManager.shared.activate()
+                    }
+                }
             }
 
             PrefsRow(label: "Address bar liquid tint", sublabel: "Infuse custom accent profiles into the native glass layer") {

@@ -15,9 +15,13 @@ struct ContentView: View {
 
     @Namespace private var addressBarNamespace
 
-    @AppStorage("useDarkMode") private var useDarkMode: Bool = false
+    @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .light
     @AppStorage("autoHideSidebar") private var autoHideSidebar: Bool = false
     @AppStorage("searchEngine") private var searchEngine: String = "Google"
+
+    // Live day/night state, only consulted when appearanceMode == .automatic
+    // — see SunAppearance.swift.
+    @ObservedObject private var sunAppearance = SunAppearanceManager.shared
 
     // The name shown in the landing page greeting, captured once via
     // NameOnboardingView on first launch. hasCompletedNameOnboarding is
@@ -51,6 +55,14 @@ struct ContentView: View {
 
     private var isLandingPage: Bool {
         tabManager.activeTab.url.absoluteString == "about:blank"
+    }
+
+    private var isDarkModeActive: Bool {
+        switch appearanceMode {
+        case .light:     return false
+        case .dark:      return true
+        case .automatic: return sunAppearance.isNightTime
+        }
     }
 
     private var sidebarOffset: CGFloat {
@@ -247,6 +259,10 @@ struct ContentView: View {
                 ? ""
                 : tabManager.activeTab.urlString
 
+            if appearanceMode == .automatic {
+                SunAppearanceManager.shared.activate()
+            }
+
             if isPrivateWindow {
                 if tabManager.tabs.isEmpty {
                     tabManager.createNewTab(isPrivate: true)
@@ -293,7 +309,7 @@ struct ContentView: View {
             }
         }
         .animation(.shromeBouncy, value: isLandingPage)
-        .preferredColorScheme((useDarkMode || tabManager.activeTab.isPrivate) ? .dark : .light)
+        .preferredColorScheme((isDarkModeActive || tabManager.activeTab.isPrivate) ? .dark : .light)
         .sheet(isPresented: $showHistoryPanel) {
             HistoryView(tabManager: tabManager) {
                 showHistoryPanel = false
