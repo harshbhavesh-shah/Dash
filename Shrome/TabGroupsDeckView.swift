@@ -9,7 +9,11 @@ import SwiftUI
 struct OpenSidebarGroupsDeck: View {
     @ObservedObject var tabManager: TabManager
     @State private var expandedGroups: Set<UUID> = []
-    
+
+    // FIX: Needed so "Add New Tab to {group}" creates a private tab when
+    // this is hosted in a private window — see contextMenu below.
+    @Environment(\.isPrivateWindow) private var isPrivateWindow
+
     // States for creating a custom group
     @State private var showCreationPopover = false
     @State private var newGroupName = ""
@@ -68,7 +72,10 @@ struct OpenSidebarGroupsDeck: View {
                     }
                     .contextMenu {
                         Button("Add New Tab to \(group.name)") {
-                            tabManager.createNewTab(targetGroupId: group.id)
+                            // FIX: Was missing isPrivate: — defaulted to
+                            // false, so a tab added to a group from inside a
+                            // private window silently wasn't private.
+                            tabManager.createNewTab(isPrivate: isPrivateWindow, targetGroupId: group.id)
                         }
                     }
                     
@@ -193,7 +200,12 @@ struct OpenSidebarGroupsDeck: View {
 // MARK: - COMPACT COLLAPSED SIDEBAR VIEW COMPONENT
 struct CollapsedSidebarGroupsDeck: View {
     @ObservedObject var tabManager: TabManager
-    
+
+    // FIX: Same propagation fix as OpenSidebarGroupsDeck above — tapping an
+    // empty group's icon here also needs to respect the window's private
+    // state.
+    @Environment(\.isPrivateWindow) private var isPrivateWindow
+
     var body: some View {
         VStack(spacing: 12) {
             ForEach(tabManager.groups) { group in
@@ -222,7 +234,7 @@ struct CollapsedSidebarGroupsDeck: View {
                     if let firstTab = groupTabs.first {
                         tabManager.activeTabId = firstTab.id
                     } else {
-                        tabManager.createNewTab(targetGroupId: group.id)
+                        tabManager.createNewTab(isPrivate: isPrivateWindow, targetGroupId: group.id)
                     }
                 }
             }

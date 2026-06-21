@@ -38,6 +38,7 @@ struct ContentView: View {
     @State private var hideTask: Task<Void, Never>? = nil
 
     @State private var isPrivateWindowUnlocked = false
+    @AppStorage("requirePrivateWindowAuth") private var requirePrivateWindowAuth: Bool = true
     @State private var biometricErrorMessage: String? = nil
 
     // Reference to this window, resolved via WindowHacker — needed so
@@ -191,7 +192,7 @@ struct ContentView: View {
             bottomBarLayer
 
             // LAYER 4: Private Session Lock Shield
-            if isPrivateWindow && !isPrivateWindowUnlocked {
+            if isPrivateWindow && requirePrivateWindowAuth && !isPrivateWindowUnlocked {
                 ZStack {
                     Color.clear
                         .background(.ultraThinMaterial)
@@ -200,7 +201,7 @@ struct ContentView: View {
                     VStack(spacing: 16) {
                         Image(systemName: "lock.shield.fill")
                             .font(.system(size: 40))
-                            .foregroundColor(.purple)
+                            .foregroundColor(.shromePrivate)
 
                         Text("Private Session Locked")
                             .font(.system(size: 18, weight: .bold, design: .rounded))
@@ -216,7 +217,7 @@ struct ContentView: View {
                                 .padding(.horizontal, 6)
                         }
                         .buttonStyle(.borderedProminent)
-                        .tint(.purple)
+                        .tint(.shromePrivate)
                         .keyboardShortcut(.defaultAction)
 
                         if let errorMsg = biometricErrorMessage {
@@ -271,7 +272,9 @@ struct ContentView: View {
                         tabManager.tabs[i].isPrivate = true
                     }
                 }
-                triggerTouchIDPrompt()
+                if requirePrivateWindowAuth {
+                    triggerTouchIDPrompt()
+                }
             }
         }
         // PERF FIX: Cancel the pending hide timer if the view disappears

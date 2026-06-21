@@ -10,6 +10,17 @@ import SwiftUI
 // Keeping this around as a fallback in case other files still call Color.babyPink!
 extension Color {
     static let babyPink = Color(red: 1.0, green: 0.75, blue: 0.85)
+
+    // FIX: Single source of truth for "this is a private/incognito surface"
+    // styling. Previously scattered as bare `.purple` across ContentView's
+    // lock screen, FloatingAddressBar, and GravityLandingView's favorite-tile
+    // icon — each a slightly different shade/opacity, and the sidebar had no
+    // private indication at all. Deliberately kept distinct from the user's
+    // chosen accent theme (rather than reusing `accentColor`) so private
+    // windows stay visually unmistakable, per the same logic Safari/Chrome
+    // use a different color identity for private/incognito — that contrast
+    // is itself a privacy safety signal, not just decoration.
+    static let shromePrivate = Color(red: 0.64, green: 0.42, blue: 0.96)
 }
 
 // --- YOUR CUSTOM GLASS AESTHETIC ---

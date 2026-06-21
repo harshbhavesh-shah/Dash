@@ -15,6 +15,10 @@ struct SidebarView: View {
     @AppStorage("accentColorGreen") private var g: Double = 0.55
     @AppStorage("accentColorBlue") private var b: Double = 0.72
 
+    // FIX: Needed so "+" creates a PRIVATE tab when this sidebar is hosted
+    // in a private window — see createNewTab() call below.
+    @Environment(\.isPrivateWindow) private var isPrivateWindow
+
     var accentColor: Color { Color(red: r, green: g, blue: b) }
 
     var body: some View {
@@ -39,13 +43,20 @@ struct SidebarView: View {
 
                 Button(action: {
                     withAnimation(.shromeBouncy) {
-                        tabManager.createNewTab()
+                        // FIX: Was tabManager.createNewTab() with no
+                        // isPrivate argument — defaulted to false, so a tab
+                        // opened from this button inside a private window
+                        // was silently NOT private (would get saved to
+                        // history, included in session restore, etc.)
+                        // despite the user believing the whole window was
+                        // private.
+                        tabManager.createNewTab(isPrivate: isPrivateWindow)
                     }
                 }) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 22))
-                        .foregroundColor(accentColor)
-                        .shadow(color: accentColor.opacity(0.5), radius: 8)
+                        .foregroundColor(isPrivateWindow ? .shromePrivate : accentColor)
+                        .shadow(color: (isPrivateWindow ? Color.shromePrivate : accentColor).opacity(0.5), radius: 8)
                         .frame(width: isVisible ? 80 : 55)
                 }
                 .buttonStyle(.bouncy)
@@ -206,9 +217,9 @@ struct TabRow: View {
                     .transition(.scale.combined(with: .opacity))
                 } else if isActive {
                     Circle()
-                        .fill(accentColor)
+                        .fill(tab.isPrivate ? .shromePrivate : accentColor)
                         .frame(width: 6, height: 6)
-                        .shadow(color: accentColor, radius: 4)
+                        .shadow(color: tab.isPrivate ? .shromePrivate : accentColor, radius: 4)
                 }
             }
         }

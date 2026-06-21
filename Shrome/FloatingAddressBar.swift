@@ -41,7 +41,7 @@ struct FloatingAddressBar: View {
         HStack(spacing: 15) {
             Image(systemName: isPrivate ? "shield.fill" : "magnifyingglass")
                 .font(.system(size: 13, weight: .black))
-                .foregroundColor(isPrivate ? .purple : Color(NSColor.labelColor).opacity(0.65))
+                .foregroundColor(isPrivate ? .shromePrivate : Color(NSColor.labelColor).opacity(0.65))
 
             // Inline-completing text field replaces the plain SwiftUI TextField.
             InlineCompleteTextField(
@@ -64,7 +64,7 @@ struct FloatingAddressBar: View {
             if isPrivate {
                 Image(systemName: "eye.slash.fill")
                     .font(.system(size: 10))
-                    .foregroundColor(.purple.opacity(0.6))
+                    .foregroundColor(.shromePrivate.opacity(0.6))
             }
 
             if tabManager.activeTab.url.absoluteString != "about:blank" {
@@ -93,7 +93,7 @@ struct FloatingAddressBar: View {
                     .glassEffect(
                         .regular.tint(
                             isPrivate
-                                ? Color.purple.opacity(0.12)
+                                ? Color.shromePrivate.opacity(0.12)
                                 : Color.primary.opacity(0.04)
                         ),
                         in: Capsule()
@@ -108,7 +108,7 @@ struct FloatingAddressBar: View {
             Capsule()
                 .strokeBorder(Color.primary.opacity(0.09), lineWidth: 1)
         }
-        .shadow(color: isPrivate ? .purple.opacity(0.1) : .black.opacity(0.05), radius: 12, x: 0, y: 6)
+        .shadow(color: isPrivate ? .shromePrivate.opacity(0.1) : .black.opacity(0.05), radius: 12, x: 0, y: 6)
         .animation(.shromePop, value: isCurrentPageFavorited)
         .onAppear {
             cachedFavorites = decodeFavorites(from: customFavoritesJSON)

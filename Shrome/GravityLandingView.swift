@@ -61,7 +61,7 @@ private struct GlassFavoriteTile: View {
                     if isPrivateSession {
                         Image(systemName: site.icon)
                             .font(.system(size: 20, weight: .medium))
-                            .foregroundStyle(Color.purple)
+                            .foregroundStyle(Color.shromePrivate)
                     } else {
                         AsyncImage(url: faviconURL) { phase in
                             if let image = phase.image {
@@ -188,6 +188,15 @@ struct GravityLandingView: View {
 
     var accentColor: Color { Color(red: r, green: g, blue: b) }
 
+    // FIX: The search bar's icon, glow, and gradient all used accentColor
+    // unconditionally — meaning the landing page kept the user's regular
+    // theme color even in a private session, while FloatingAddressBar (the
+    // same search bar, just docked) correctly switched to the dedicated
+    // private color. This resolves the two to the same logic.
+    private var effectiveAccentColor: Color {
+        isPrivateSession ? .shromePrivate : accentColor
+    }
+
     private var isPrivateSession: Bool {
         tabManager.activeTab.isPrivate
     }
@@ -290,7 +299,7 @@ struct GravityLandingView: View {
                 HStack(spacing: 0) {
                     Image(systemName: isPrivateSession ? "shield.fill" : "magnifyingglass")
                         .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(accentColor)
+                        .foregroundColor(effectiveAccentColor)
                         .padding(.leading, 20)
 
                     InlineCompleteTextField(
@@ -320,7 +329,7 @@ struct GravityLandingView: View {
                         }
                         Color.clear
                             .glassEffect(
-                                .regular.tint(accentColor.opacity(hasBackgroundPhoto ? 0.10 : 0.06)),
+                                .regular.tint(effectiveAccentColor.opacity(hasBackgroundPhoto ? 0.10 : 0.06)),
                                 in: Capsule()
                             )
                     }
@@ -329,7 +338,7 @@ struct GravityLandingView: View {
                     Capsule()
                         .fill(
                             LinearGradient(
-                                colors: [accentColor.opacity(0.65), accentColor.opacity(0.35), accentColor.opacity(0.65)],
+                                colors: [effectiveAccentColor.opacity(0.65), effectiveAccentColor.opacity(0.35), effectiveAccentColor.opacity(0.65)],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -347,13 +356,13 @@ struct GravityLandingView: View {
                 .background {
                     ZStack {
                         Capsule()
-                            .fill(accentColor)
+                            .fill(effectiveAccentColor)
                             .frame(width: 580, height: 64)
                             .blur(radius: 32)
                             .opacity(isGlowPulsing ? 0.30 : 0.18)
 
                         Capsule()
-                            .fill(accentColor)
+                            .fill(effectiveAccentColor)
                             .frame(width: 660, height: 90)
                             .blur(radius: 60)
                             .opacity(isGlowPulsing ? 0.22 : 0.10)
@@ -377,12 +386,15 @@ struct GravityLandingView: View {
                 .transition(.opacity)
             }
 
-            // Liquid glass clock — floats independently of the centered
-            // greeting/search column, top-right, roughly the footprint of
-            // the Music widget in macOS Control Center.
-            LiquidGlassClockPanel(hasBackgroundPhoto: hasBackgroundPhoto)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                .padding(28)
+            // Liquid glass clock + now-playing — float independently of
+            // the centered greeting/search column, top-right, stacked
+            // vertically roughly where Control Center's widgets sit.
+            VStack(alignment: .trailing, spacing: 16) {
+                LiquidGlassClockPanel(hasBackgroundPhoto: hasBackgroundPhoto)
+                LiquidGlassNowPlayingWidget(hasBackgroundPhoto: hasBackgroundPhoto)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            .padding(28)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {

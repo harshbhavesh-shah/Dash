@@ -54,6 +54,7 @@ class GravityPreferences: ObservableObject {
     @AppStorage("blockTrackers") var blockTrackers: Bool = true
     @AppStorage("clearOnQuit")   var clearOnQuit: Bool = false
     @AppStorage("saveHistory")   var saveHistory: Bool = true
+    @AppStorage("requirePrivateWindowAuth") var requirePrivateWindowAuth: Bool = true
 
     var accentColor: Color { selectedTheme.accentColor }
 
@@ -145,8 +146,8 @@ struct GravityPreferencesView: View {
             // merged into this view's frame.
             VStack(alignment: .leading, spacing: 4) {
                 Text("Shrome Settings")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(.primary.opacity(0.5))
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.primary.opacity(1))
                     .padding(.horizontal, 16)
                     .padding(.top, 44)   // clears the traffic lights
                     .padding(.bottom, 10)
@@ -556,8 +557,14 @@ struct PrivacySection: View {
                     .labelsHidden()
             }
 
-            PrefsRow(label: "Clear history & cache on quit", sublabel: "All data will be wiped when Shrome closes", isLast: true) {
+            PrefsRow(label: "Clear history & cache on quit", sublabel: "All data will be wiped when Shrome closes") {
                 Toggle("", isOn: $prefs.clearOnQuit)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+            }
+
+            PrefsRow(label: "Lock private windows with Touch ID", sublabel: "Require authentication before showing tabs in a new private window", isLast: true) {
+                Toggle("", isOn: $prefs.requirePrivateWindowAuth)
                     .toggleStyle(.switch)
                     .labelsHidden()
             }

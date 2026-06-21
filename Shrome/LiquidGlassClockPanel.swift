@@ -14,6 +14,12 @@ import SwiftUI
 import Combine
 
 struct LiquidGlassClockPanel: View {
+    /// Single source of truth for the landing page's corner widget
+    /// stack — LiquidGlassNowPlayingWidget mirrors this so the two cards
+    /// line up at exactly the same width, rather than each guessing a
+    /// number that could drift out of sync later.
+    static let widgetWidth: CGFloat = 220
+
     /// Mirrors the readability treatment used elsewhere on the landing
     /// page — a touch more glass opacity and a soft text shadow once a
     /// custom background photo is set, so the card stays legible without
@@ -56,7 +62,7 @@ struct LiquidGlassClockPanel: View {
         }
         .padding(.horizontal, 22)
         .padding(.vertical, 16)
-        .frame(minWidth: 170, alignment: .leading)
+        .frame(width: Self.widgetWidth, alignment: .leading)
         .background {
             ZStack {
                 if hasBackgroundPhoto {
