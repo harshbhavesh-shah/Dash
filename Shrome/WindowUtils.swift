@@ -19,13 +19,18 @@ struct WebView: NSViewRepresentable {
     }
     
     func makeNSView(context: Context) -> WKWebView {
-        // PERF FIX: Instead of running an expensive constructor, dequeue a pre-heated viewport process instantly
-        let webView = WebViewPool.shared.dequeueWebView(isPrivate: tab.isPrivate)
+        // FIX: Each tab now gets its OWN persistent WKWebView, keyed by
+        // tab.id, instead of a generic interchangeable instance shared
+        // across every tab in the window — see WebViewPool. The same
+        // instance is returned every time this tab becomes active again,
+        // which is what actually fixes tabs "cloning" each other's
+        // content: there's no shared mutable navigation state left for two
+        // tabs to race over, structurally, not just patched timing.
+        let webView = WebViewPool.shared.webView(for: tab.id, isPrivate: tab.isPrivate)
         
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
         
-        // Setup internal KVO observation channel
         context.coordinator.setupUrlObservation(for: webView)
         
         return webView
@@ -51,33 +56,41 @@ struct WebView: NSViewRepresentable {
             context.coordinator.lastReloadTrigger = tab.reloadTrigger
         }
     }
+
+    // FIX: The webview must NOT be torn down here. WebViewPool owns it for
+    // the tab's full lifetime (until the tab is actually closed), so
+    // switching away from this tab and back later reattaches the exact
+    // same instance — preserving scroll position, in-page JS state, zoom,
+    // etc., the way a real browser tab behaves. Only detach the
+    // about-to-be-deallocated Coordinator as this webview's delegate.
+    static func dismantleNSView(_ nsView: WKWebView, coordinator: Coordinator) {
+        if nsView.navigationDelegate === coordinator {
+            nsView.navigationDelegate = nil
+        }
+        if nsView.uiDelegate === coordinator {
+            nsView.uiDelegate = nil
+        }
+    }
     
     class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         var parent: WebView
         var lastReloadTrigger: UUID
         var urlObservation: NSKeyValueObservation?
-
-        // FIX: Back/Forward (⌘[ / ⌘]) had no plumbing anywhere in the app —
-        // there's no canGoBack/canGoForward state surfaced to a button, so
-        // these are wired directly off the menu's NotificationCenter posts
-        // straight to the live WKWebView, same broadcast style the other
-        // menu actions (New Tab, Reload, etc.) already use. Only one WebView
-        // is ever on screen per window, so there's no ambiguity about which
-        // instance should respond.
-        private var backObserver: NSObjectProtocol?
-        private var forwardObserver: NSObjectProtocol?
-
+        
         init(_ parent: WebView) {
             self.parent = parent
             self.lastReloadTrigger = parent.tab.reloadTrigger
             super.init()
         }
 
-        deinit {
-            if let backObserver { NotificationCenter.default.removeObserver(backObserver) }
-            if let forwardObserver { NotificationCenter.default.removeObserver(forwardObserver) }
-        }
-
+        // Each Coordinator now belongs to exactly one tab for its entire
+        // life (a fresh Coordinator is created whenever this tab's WebView
+        // is remounted, but the underlying WKWebView and the tab it
+        // represents never change out from under it) — so there's no
+        // cross-tab attribution ambiguity left to guard against. Writing
+        // straight to `self.parent.tab` is correct again, simply because
+        // it's now structurally impossible for `parent.tab` to silently
+        // resolve to a *different* tab than the one this webview is for.
         func setupUrlObservation(for webView: WKWebView) {
             urlObservation = webView.observe(\.url, options: [.new]) { [weak self] view, _ in
                 guard let self = self, let newUrl = view.url else { return }
@@ -87,20 +100,6 @@ struct WebView: NSViewRepresentable {
                         self.parent.tab.urlString = newUrl.absoluteString
                     }
                 }
-            }
-
-            backObserver = NotificationCenter.default.addObserver(
-                forName: Notification.Name("MenuActionGoBack"), object: nil, queue: .main
-            ) { [weak webView] _ in
-                guard let webView, webView.canGoBack else { return }
-                webView.goBack()
-            }
-
-            forwardObserver = NotificationCenter.default.addObserver(
-                forName: Notification.Name("MenuActionGoForward"), object: nil, queue: .main
-            ) { [weak webView] _ in
-                guard let webView, webView.canGoForward else { return }
-                webView.goForward()
             }
         }
         
@@ -130,6 +129,11 @@ struct WebView: NSViewRepresentable {
 
 struct WindowHacker: NSViewRepresentable {
     var showNativeButtons: Bool
+    // Hands the resolved NSWindow back to the caller — lets ContentView
+    // know which physical window it's hosted in, which menu-action
+    // handlers need in order to act only on the focused window (see FIX
+    // below).
+    var onResolveWindow: ((NSWindow) -> Void)? = nil
     
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
@@ -148,6 +152,7 @@ struct WindowHacker: NSViewRepresentable {
         window.standardWindowButton(.closeButton)?.isHidden = !showNativeButtons
         window.standardWindowButton(.miniaturizeButton)?.isHidden = !showNativeButtons
         window.standardWindowButton(.zoomButton)?.isHidden = !showNativeButtons
+        onResolveWindow?(window)
     }
 }
 

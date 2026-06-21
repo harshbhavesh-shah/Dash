@@ -115,6 +115,12 @@ class TabManager: ObservableObject {
             activeTabId = tabs[min(index, tabs.count - 1)].id
         }
 
+        // FIX: Each tab now owns a dedicated, persistent WKWebView (see
+        // WebViewPool) rather than borrowing a shared one — so closing a
+        // tab needs to explicitly release its webview, or every closed tab
+        // would leak its WKWebView in the pool's registry forever.
+        WebViewPool.shared.releaseWebView(for: id)
+
         if !closedTab.isPrivate { saveSession() }
     }
 

@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 private struct PrivateWindowKey: EnvironmentKey {
     static let defaultValue: Bool = false
@@ -21,7 +22,26 @@ struct ShromeApp: App {
     let persistenceController = PersistenceController.shared
     @Environment(\.openWindow) private var openWindow
 
+    // FIX: SwiftUI's `.keyboardShortcut(.tab, modifiers: .control)` on the
+    // "Tabs" menu commands turned out not to be reliable on macOS — Tab is
+    // handled specially by AppKit's focus-navigation machinery before a
+    // key event ever reaches NSMenuItem key-equivalent matching, so the
+    // Commands-based binding silently never fires no matter what else is
+    // going on with window tabbing. A local NSEvent monitor intercepts the
+    // raw keyDown directly — ahead of focus navigation and any responder's
+    // own key bindings — which sidesteps the problem entirely. Must be
+    // retained (held as a stored property) for the app's lifetime, or
+    // ARC deallocates it and the monitor stops firing immediately.
+    private let tabCycleMonitor = TabCycleKeyMonitor()
+
     init() {
+        // Belt-and-suspenders: macOS's native window-tabbing feature can
+        // also reserve ⌃⇥ / ⌃⇧⇥ system-wide for cycling between merged
+        // native window tabs. Shrome never uses native window tabbing, so
+        // this has no visible effect on its own, but disabling it removes
+        // one more thing that could compete for the same keystroke.
+        NSWindow.allowsAutomaticWindowTabbing = false
+
         // PERF FIX: Fire up the underlying WebKit process subsystems immediately on boot
         WebViewPool.shared.warmUp()
     }
@@ -167,6 +187,45 @@ struct ShromeApp: App {
         
         Settings {
             GravityPreferencesView()
+        }
+    }
+}
+
+/// Intercepts ⌃Tab / ⌃⇧Tab directly at the event level instead of going
+/// through SwiftUI's `Commands` menu-shortcut binding, which doesn't
+/// reliably fire for Tab-based key equivalents on macOS (see the comment
+/// on `tabCycleMonitor` above). Posts the same notifications the menu
+/// items themselves post, so `ContentView`'s existing handlers don't need
+/// to know or care which path the action came from.
+final class TabCycleKeyMonitor {
+    private var monitor: Any?
+
+    init() {
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            // keyCode 48 is the physical Tab key on every Mac keyboard
+            // layout — matching on the key code rather than
+            // charactersIgnoringModifiers avoids layout-dependent
+            // surprises (Control can remap what character gets produced
+            // on some layouts).
+            guard event.keyCode == 48 else { return event }
+
+            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+
+            if flags == [.control, .shift] {
+                NotificationCenter.default.post(name: Notification.Name("MenuActionPreviousTab"), object: nil)
+                return nil // swallow it — don't let it fall through to focus navigation
+            } else if flags == [.control] {
+                NotificationCenter.default.post(name: Notification.Name("MenuActionNextTab"), object: nil)
+                return nil
+            }
+
+            return event
+        }
+    }
+
+    deinit {
+        if let monitor {
+            NSEvent.removeMonitor(monitor)
         }
     }
 }

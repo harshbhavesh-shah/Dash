@@ -6,6 +6,7 @@
 import SwiftUI
 import AppKit
 import LocalAuthentication
+import WebKit
 
 struct ContentView: View {
     @StateObject private var tabManager = TabManager()
@@ -34,6 +35,11 @@ struct ContentView: View {
 
     @State private var isPrivateWindowUnlocked = false
     @State private var biometricErrorMessage: String? = nil
+
+    // Reference to this window, resolved via WindowHacker — needed so
+    // "close the last tab" can close the actual window rather than just
+    // mutating tab state.
+    @State private var hostWindow: NSWindow?
 
     // PERF FIX: Separate the text the user is actively typing from the URL
     // the WebView should load. Previously both shared the same urlString
@@ -230,7 +236,10 @@ struct ContentView: View {
             }
         }
         .background(
-            WindowHacker(showNativeButtons: shouldUseNativeButtons).frame(width: 0, height: 0)
+            WindowHacker(showNativeButtons: shouldUseNativeButtons) { window in
+                if hostWindow !== window { hostWindow = window }
+            }
+            .frame(width: 0, height: 0)
         )
         .onAppear {
             // Seed the display string from the active tab on first appear.
@@ -255,6 +264,19 @@ struct ContentView: View {
         // a UI update on a deallocated context.
         .onDisappear {
             hideTask?.cancel()
+        }
+        // FIX: WebViewPool's per-tab registry is a long-lived singleton
+        // that outlives any individual window — closing a tab releases its
+        // own webview (see TabManager.closeTab), but closing the entire
+        // WINDOW (without closing each tab first) previously left every
+        // one of its tabs' WKWebViews leaked in the registry forever, since
+        // nothing told the pool "this whole window, and everything in it,
+        // is gone."
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { notification in
+            guard let closingWindow = notification.object as? NSWindow, closingWindow === hostWindow else { return }
+            for tab in tabManager.tabs {
+                WebViewPool.shared.releaseWebView(for: tab.id)
+            }
         }
         // Sync displayURLString whenever the active tab changes externally
         // (tab switch, back/forward navigation, link click opening new tab).
@@ -284,7 +306,17 @@ struct ContentView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionCloseTab"))) { _ in
-            tabManager.closeTab(id: tabManager.activeTabId)
+            // FIX: This used to just no-op once only one tab was left
+            // (guarded out inside closeTab itself), which is why "closing
+            // the tab" appeared to do nothing at all. Classic Mac behavior
+            // is that closing the last tab closes the window — so once
+            // there's nothing left to close *within* the window, close the
+            // window itself instead of swallowing the shortcut.
+            if tabManager.tabs.count <= 1 {
+                (hostWindow ?? NSApplication.shared.keyWindow)?.close()
+            } else {
+                tabManager.closeTab(id: tabManager.activeTabId)
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionReload"))) { _ in
             tabManager.reloadActiveTab()
@@ -317,6 +349,20 @@ struct ContentView: View {
             withAnimation(.shromeSnappy) {
                 tabManager.selectLastTab()
             }
+        }
+        // FIX: Now that every tab owns its own persistent webview (see
+        // WebViewPool), Back/Forward can just ask for the ACTIVE tab's
+        // instance directly instead of broadcasting to every open tab's
+        // webview and hoping only the right one reacts — existingWebView
+        // never creates one, so this is also a no-op for a tab that's
+        // still on the landing page and has no webview yet.
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionGoBack"))) { _ in
+            guard let webView = WebViewPool.shared.existingWebView(for: tabManager.activeTabId), webView.canGoBack else { return }
+            webView.goBack()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionGoForward"))) { _ in
+            guard let webView = WebViewPool.shared.existingWebView(for: tabManager.activeTabId), webView.canGoForward else { return }
+            webView.goForward()
         }
     }
 
