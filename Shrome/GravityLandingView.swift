@@ -127,8 +127,6 @@ struct GravityLandingView: View {
     var namespace: Namespace.ID
     var onSubmit: (String) -> Void
 
-    @FocusState private var isSearchFieldFocused: Bool
-
     @AppStorage("accentColorRed") private var r: Double = 0.96
     @AppStorage("accentColorGreen") private var g: Double = 0.55
     @AppStorage("accentColorBlue") private var b: Double = 0.72
@@ -274,6 +272,7 @@ struct GravityLandingView: View {
                         placeholder: "Search with Shrome...",
                         font: .systemFont(ofSize: 15, weight: .medium),
                         textColor: NSColor.labelColor,
+                        autoFocusOnAppear: true,
                         onCommit: {
                             topSuggestion = nil
                             onSubmit(urlString)
@@ -361,9 +360,6 @@ struct GravityLandingView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             cachedBackgroundImage = BackgroundImageStore.loadImage(at: landingBackgroundImagePath)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                isSearchFieldFocused = true
-            }
             withAnimation(.easeInOut(duration: 2.6).repeatForever(autoreverses: true)) {
                 isGlowPulsing = true
             }

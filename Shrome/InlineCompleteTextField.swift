@@ -22,6 +22,12 @@ struct InlineCompleteTextField: NSViewRepresentable {
     var placeholder: String = ""
     var font: NSFont = .systemFont(ofSize: 14, weight: .medium)
     var textColor: NSColor = .labelColor
+    /// When true, this field grabs keyboard focus shortly after it first
+    /// appears — used by the landing page's search field so a brand new
+    /// tab is immediately ready to type into. Defaults to false so the
+    /// floating address bar (which uses this same component while
+    /// browsing) never steals focus unexpectedly.
+    var autoFocusOnAppear: Bool = false
 
     /// Called when the user commits — either by accepting the completion
     /// or by pressing Return on their own typed text.
@@ -45,6 +51,26 @@ struct InlineCompleteTextField: NSViewRepresentable {
         field.cell?.isScrollable = true
         field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         context.coordinator.setupFocusObserver(for: field)
+
+        if autoFocusOnAppear {
+            // FIX: GravityLandingView previously tried to drive this via a
+            // @FocusState that was never actually attached to this field
+            // with .focused(...) — on macOS, SwiftUI's FocusState doesn't
+            // automatically wire up to NSViewRepresentable-backed controls
+            // the way it does for native SwiftUI controls, so setting it
+            // was a complete no-op and the cursor never actually landed in
+            // the search bar. Driving focus directly via makeFirstResponder
+            // (the same mechanism the working ⌘L "Open Location" shortcut
+            // already uses) is the reliable way to do this for an
+            // NSTextField. The short delay is needed because the field
+            // isn't actually attached to a window yet the instant
+            // makeNSView returns.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak field] in
+                guard let field else { return }
+                field.window?.makeFirstResponder(field)
+            }
+        }
+
         return field
     }
 
