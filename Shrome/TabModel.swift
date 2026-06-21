@@ -2,13 +2,14 @@
 //  TabModel.swift
 //  Shrome
 //
+//  Created by Harsh Shah on 06/03/2026.
+//
 
 import SwiftUI
 import Foundation
 import Combine
 import CoreData
 
-// --- THE TAB GROUP MODEL STRUCTURE ---
 struct TabGroup: Identifiable, Hashable, Codable {
     var id: UUID
     var name: String
@@ -28,11 +29,6 @@ struct Tab: Identifiable, Hashable, Codable {
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
-
-    // PERF FIX: Full value equality so SwiftUI can diff individual tabs
-    // and skip re-rendering rows where nothing actually changed.
-    // Previously this only compared IDs, meaning SwiftUI could never tell
-    // two different states of the same tab apart.
     static func == (lhs: Tab, rhs: Tab) -> Bool {
         lhs.id == rhs.id &&
         lhs.url == rhs.url &&
@@ -54,19 +50,11 @@ class TabManager: ObservableObject {
         TabGroup(id: UUID(uuidString: "33222222-2222-2222-2222-222222222222")!, name: "Gaming", icon: "gamecontroller.fill", colorName: "Peach")
     ]
 
-    // PERF FIX: Dedicated background context for all Core Data writes.
-    // Previously all history writes happened on viewContext (main thread),
-    // blocking the UI during navigations, especially rapid redirect chains.
     private lazy var backgroundContext: NSManagedObjectContext = {
         let ctx = PersistenceController.shared.container.newBackgroundContext()
         ctx.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         return ctx
     }()
-
-    // PERF FIX: Task handle for debouncing saveSession.
-    // Previously saveSession() fired synchronously on every mutation
-    // (tab creation, URL update, group move, close) encoding JSON and
-    // writing UserDefaults on the main thread — causing frame drops.
     private var saveDebounceTask: Task<Void, Never>?
 
     init() {
@@ -114,11 +102,6 @@ class TabManager: ObservableObject {
         if wasActive {
             activeTabId = tabs[min(index, tabs.count - 1)].id
         }
-
-        // FIX: Each tab now owns a dedicated, persistent WKWebView (see
-        // WebViewPool) rather than borrowing a shared one — so closing a
-        // tab needs to explicitly release its webview, or every closed tab
-        // would leak its WKWebView in the pool's registry forever.
         WebViewPool.shared.releaseWebView(for: id)
 
         if !closedTab.isPrivate { saveSession() }
@@ -131,7 +114,6 @@ class TabManager: ObservableObject {
 
     // MARK: - Tab Cycling (⌃Tab / ⌃⇧Tab / ⌘1-9)
 
-    /// Cycles forward through `tabs` in array order, wrapping past the end.
     func selectNextTab() {
         guard !tabs.isEmpty else { return }
         guard let index = tabs.firstIndex(where: { $0.id == activeTabId }) else {
@@ -141,7 +123,6 @@ class TabManager: ObservableObject {
         activeTabId = tabs[(index + 1) % tabs.count].id
     }
 
-    /// Cycles backward through `tabs` in array order, wrapping past the start.
     func selectPreviousTab() {
         guard !tabs.isEmpty else { return }
         guard let index = tabs.firstIndex(where: { $0.id == activeTabId }) else {
@@ -150,18 +131,11 @@ class TabManager: ObservableObject {
         }
         activeTabId = tabs[(index - 1 + tabs.count) % tabs.count].id
     }
-
-    /// 1-based position, matching the ⌘1...⌘8 shortcuts. Pressing a number
-    /// beyond the current tab count is a no-op — same as Chrome/Safari,
-    /// rather than wrapping or clamping to the last tab.
     func selectTab(number: Int) {
         let index = number - 1
         guard tabs.indices.contains(index) else { return }
         activeTabId = tabs[index].id
     }
-
-    /// ⌘9 always jumps to the last open tab regardless of how many are
-    /// open — it means "last tab", not "tab number 9".
     func selectLastTab() {
         guard let last = tabs.last else { return }
         activeTabId = last.id
@@ -215,17 +189,12 @@ class TabManager: ObservableObject {
 
     // MARK: - Autocomplete
 
-    // A lightweight suggestion value passed to the UI layer.
     struct URLSuggestion: Identifiable, Equatable {
         let id = UUID()
         let url: String
         let title: String
         let visitedAt: Date
     }
-
-    // Queries HistoryItem on the background context so the main thread
-    // never blocks during typing. Results are deduped by host+path and
-    // capped at 6 so the dropdown stays compact.
     func fetchSuggestions(matching query: String) async -> [URLSuggestion] {
         guard !query.isEmpty else { return [] }
 
@@ -233,25 +202,20 @@ class TabManager: ObservableObject {
         return await ctx.perform {
             let request = NSFetchRequest<HistoryItem>(entityName: "HistoryItem")
 
-            // Match against both stored URL and title fields.
             request.predicate = NSPredicate(
                 format: "url CONTAINS[cd] %@ OR title CONTAINS[cd] %@",
                 query, query
             )
-            // Most-recent first so the best matches surface at the top.
             request.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
-            // Fetch more than we need so dedup has material to work with.
             request.fetchLimit = 40
 
             guard let results = try? ctx.fetch(request) else { return [] }
 
-            // Deduplicate: keep only the most-recent visit per URL string.
             var seen = Set<String>()
             var suggestions: [URLSuggestion] = []
 
             for item in results {
                 guard let url = item.url, !url.isEmpty else { continue }
-                // Normalise the key to scheme+host+path, ignoring fragments/query.
                 let key: String
                 if let parsed = URL(string: url), let host = parsed.host {
                     key = host + parsed.path
@@ -273,8 +237,6 @@ class TabManager: ObservableObject {
 
     // MARK: - Persistence
 
-    // PERF FIX: Debounced 500ms — collapses rapid-fire mutations (e.g. a
-    // tab group drag that moves 3 tabs) into a single encode + UserDefaults write.
     func saveSession() {
         saveDebounceTask?.cancel()
         saveDebounceTask = Task { [weak self] in
@@ -300,11 +262,6 @@ class TabManager: ObservableObject {
             UserDefaults.standard.set(activeEncoded, forKey: "activeTabId")
         }
     }
-
-    // PERF FIX: All Core Data writes now happen on a dedicated background
-    // context, completely off the main thread. The persistent store
-    // coordinator handles merging back to viewContext automatically
-    // (automaticallyMergesChangesFromParent is set in Persistence.swift).
     private func logVisitToCoreData(url: URL, title: String) {
         let ctx = backgroundContext
         ctx.perform {

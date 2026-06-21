@@ -2,19 +2,12 @@
 //  NameOnboardingView.swift
 //  Shrome
 //
-//  A one-time liquid glass prompt shown on first launch (regular windows
-//  only — there's nothing to personalize in a private window) asking what
-//  name the landing page greeting should use. Skipping leaves the name
-//  blank, in which case the greeting just drops back to a plain
-//  "Good morning" with no name, rather than ever showing a placeholder.
+//  Created by Harsh Shah on 06/03/2026.
 //
 
 import SwiftUI
 
 struct NameOnboardingView: View {
-    /// Called once, with the trimmed name the person entered (or an empty
-    /// string if they skipped). The caller is responsible for persisting it
-    /// and marking onboarding complete.
     var onComplete: (String) -> Void
 
     @State private var draftName: String = ""
@@ -121,9 +114,6 @@ struct NameOnboardingView: View {
             withAnimation(.shromeBouncy) {
                 isVisible = true
             }
-            // Slight delay so this field wins the focus race against the
-            // landing page's own search field underneath, which grabs
-            // focus 0.05s after it appears.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 isFieldFocused = true
             }
@@ -137,8 +127,6 @@ struct NameOnboardingView: View {
         withAnimation(.shromeSnappy) {
             isVisible = false
         }
-        // Let the pop-out play before ContentView actually tears the
-        // overlay down, so it doesn't just vanish mid-animation.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
             onComplete(name)
         }

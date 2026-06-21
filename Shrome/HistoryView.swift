@@ -11,7 +11,6 @@ struct HistoryView: View {
     @ObservedObject var tabManager: TabManager
     var onClose: () -> Void
     
-    // Core Data Chronological Fetch Query
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \HistoryItem.timestamp, ascending: false)],
         animation: .default
@@ -118,7 +117,6 @@ struct HistoryView: View {
     }
 }
 
-// --- ROW RENDER ENGINE ---
 struct HistoryRow: View {
     let item: HistoryItem
     var onSelect: () -> Void

@@ -2,6 +2,8 @@
 //  GravityLandingView.swift
 //  Shrome
 //
+//  Created by Harsh Shah on 06/03/2026.
+//
 
 import SwiftUI
 
@@ -16,9 +18,6 @@ private struct GlassFavoriteTile: View {
     @State private var isHovered = false
     @State private var isPressed = false
 
-    // `site.url` is stored as a bare host (e.g. "youtube.com"), so it can
-    // be handed straight to the favicon service — same approach the
-    // sidebar's tab rows already use for their favicons.
     private var faviconURL: URL? {
         guard !site.url.isEmpty else { return nil }
         return URL(string: "https://www.google.com/s2/favicons?sz=128&domain=\(site.url)")
@@ -27,17 +26,14 @@ private struct GlassFavoriteTile: View {
     var body: some View {
         VStack(spacing: 10) {
             ZStack {
-                // Base: frosted glass fill — brightens on hover
                 Circle()
                     .fill(.ultraThinMaterial)
                     .frame(width: 56, height: 56)
                     .overlay {
-                        // Hover highlight: a white wash that fades in over the glass
                         Circle()
                             .fill(Color.white.opacity(isHovered ? 0.14 : 0))
                     }
 
-                // Rim light — intensifies on hover like glass catching light
                 Circle()
                     .strokeBorder(
                         LinearGradient(
@@ -52,11 +48,6 @@ private struct GlassFavoriteTile: View {
                     )
                     .frame(width: 56, height: 56)
 
-                // Icon: the site's real favicon when it loads, falling back
-                // to the tile's curated SF Symbol if the fetch fails — and,
-                // in private sessions, skipping the network request
-                // entirely so browsing intent never leaks via a favicon
-                // lookup, using the symbol straight away instead.
                 Group {
                     if isPrivateSession {
                         Image(systemName: site.icon)
@@ -79,10 +70,8 @@ private struct GlassFavoriteTile: View {
                         .id(site.url)
                     }
                 }
-                // Nudge icon up very slightly on hover, like a physical press
                 .offset(y: isHovered ? -1 : 0)
             }
-            // Shadow deepens on hover to increase the sense of lift
             .shadow(
                 color: .black.opacity(isHovered ? 0.28 : 0.18),
                 radius: isHovered ? 14 : 8,
@@ -131,28 +120,13 @@ struct GravityLandingView: View {
     @AppStorage("accentColorGreen") private var g: Double = 0.55
     @AppStorage("accentColorBlue") private var b: Double = 0.72
 
-    // Path to the user's chosen landing page background photo, set from
-    // Preferences > Appearance. We cache the decoded NSImage in @State
-    // (loaded on appear / whenever the path changes) instead of reading
-    // it from disk on every body re-render.
     @AppStorage(BackgroundImageStore.appStorageKey) private var landingBackgroundImagePath: String = ""
     @State private var cachedBackgroundImage: NSImage? = nil
 
-    // Drives the slow breathing pulse on the search bar's ambient glow —
-    // toggled once on appear into a forever-repeating animation, so the
-    // glow stays gently alive without ever being told to stop.
     @State private var isGlowPulsing = false
 
-    // Set once via NameOnboardingView on first launch (or left blank if
-    // the user skipped it) — falls back to a name-less greeting below.
     @AppStorage("userPreferredName") private var userPreferredName: String = ""
 
-    // FIX: Picked once per landing-page mount (see onAppear below) rather
-    // than recomputed in dynamicGreeting itself — dynamicGreeting gets
-    // re-evaluated on practically every render (autocomplete updates, glow
-    // pulse animation, etc.), and a computed property would re-roll the
-    // phrase constantly, flickering between variants instead of settling
-    // on one for the session.
     @State private var selectedGreetingPhrase: String = "Good day"
 
     private static let morningPhrases = [
@@ -182,17 +156,11 @@ struct GravityLandingView: View {
 
     @EnvironmentObject var tabManager: TabManager
 
-    // --- Inline autocomplete ---
     @State private var topSuggestion: String? = nil
     @State private var debounceTask: Task<Void, Never>? = nil
 
     var accentColor: Color { Color(red: r, green: g, blue: b) }
 
-    // FIX: The search bar's icon, glow, and gradient all used accentColor
-    // unconditionally — meaning the landing page kept the user's regular
-    // theme color even in a private session, while FloatingAddressBar (the
-    // same search bar, just docked) correctly switched to the dedicated
-    // private color. This resolves the two to the same logic.
     private var effectiveAccentColor: Color {
         isPrivateSession ? .shromePrivate : accentColor
     }
@@ -201,9 +169,6 @@ struct GravityLandingView: View {
         tabManager.activeTab.isPrivate
     }
 
-    // Drives the readability boosts below — text shadow, vignette, and a
-    // touch more glass tint — so none of it affects the default look when
-    // there's no custom photo behind the page.
     private var hasBackgroundPhoto: Bool {
         cachedBackgroundImage != nil
     }
@@ -222,7 +187,6 @@ struct GravityLandingView: View {
         return "Where are we sailing today?"
     }
 
-    // --- REPLACE YOUR HARDCODED 'let favorites = [...]' BLOCK WITH THIS ---
     @AppStorage("customFavoritesJSON") private var customFavoritesJSON: String = """
     [
         {"name": "Apple", "url": "apple.com", "icon": "apple.logo"},
@@ -232,7 +196,6 @@ struct GravityLandingView: View {
     ]
     """
 
-    // A clean computed property to decode the active favorites list seamlessly
     private var favorites: [(name: String, url: String, icon: String)] {
         struct FavItem: Codable { let name: String; let url: String; let icon: String }
         guard let data = customFavoritesJSON.data(using: .utf8),
@@ -242,9 +205,6 @@ struct GravityLandingView: View {
 
     var body: some View {
         ZStack {
-            // Custom background photo, if the user has set one in
-            // Preferences > Appearance. Sits beneath everything else and
-            // fills + crops to the available space.
             if let cachedBackgroundImage {
                 GeometryReader { geo in
                     Image(nsImage: cachedBackgroundImage)
@@ -257,18 +217,11 @@ struct GravityLandingView: View {
                 .transition(.scale(scale: 1.06).combined(with: .opacity))
             }
 
-            // Frosted glass wash — full strength over the default window
-            // background, dialed back when a custom photo is set so the
-            // photo stays visible while text on top stays legible.
             Color.clear
                 .background(.ultraThinMaterial)
                 .opacity(cachedBackgroundImage != nil ? 0.55 : 1.0)
                 .ignoresSafeArea()
 
-            // Soft vignette centered on the content column. Only kicks in
-            // with a photo behind it — gives the greeting/search bar/tiles
-            // a darker patch to sit on without flattening the whole photo
-            // the way a full-screen scrim would.
             if hasBackgroundPhoto {
                 RadialGradient(
                     colors: [Color.black.opacity(0.28), Color.black.opacity(0.0)],
@@ -347,12 +300,6 @@ struct GravityLandingView: View {
                         .blur(radius: 35)
                         .opacity(0.85)
                 }
-                // Ambient glow — sits furthest back so it projects outward
-                // beyond the capsule's own edges, in the active theme's
-                // accent color. Two stacked blurs (tighter + much wider)
-                // give it a softer falloff than a single blur would, and a
-                // slow breathing pulse keeps it gently alive to draw the
-                // eye without being distracting.
                 .background {
                     ZStack {
                         Capsule()
@@ -386,9 +333,6 @@ struct GravityLandingView: View {
                 .transition(.opacity)
             }
 
-            // Liquid glass clock + now-playing — float independently of
-            // the centered greeting/search column, top-right, stacked
-            // vertically roughly where Control Center's widgets sit.
             VStack(alignment: .trailing, spacing: 16) {
                 LiquidGlassClockPanel(hasBackgroundPhoto: hasBackgroundPhoto)
                 LiquidGlassNowPlayingWidget(hasBackgroundPhoto: hasBackgroundPhoto)

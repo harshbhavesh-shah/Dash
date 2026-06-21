@@ -2,6 +2,8 @@
 //  FloatingAddressBar.swift
 //  Shrome
 //
+//  Created by Harsh Shah on 06/03/2026.
+//
 
 import SwiftUI
 
@@ -14,14 +16,8 @@ struct FloatingAddressBar: View {
     @AppStorage("accentColorRed") private var r: Double = 0.96
     @AppStorage("accentColorGreen") private var g: Double = 0.55
     @AppStorage("accentColorBlue") private var b: Double = 0.72
-
     @AppStorage("customFavoritesJSON") private var customFavoritesJSON: String = ""
-
-    // PERF FIX: Cache decoded favorites so JSON decoding only runs when the
-    // stored JSON actually changes, not on every render.
     @State private var cachedFavorites: [FavItem] = []
-
-    // --- Inline autocomplete ---
     @State private var topSuggestion: String? = nil
     @State private var debounceTask: Task<Void, Never>? = nil
 
@@ -43,7 +39,6 @@ struct FloatingAddressBar: View {
                 .font(.system(size: 13, weight: .black))
                 .foregroundColor(isPrivate ? .shromePrivate : Color(NSColor.labelColor).opacity(0.65))
 
-            // Inline-completing text field replaces the plain SwiftUI TextField.
             InlineCompleteTextField(
                 text: $urlString,
                 suggestion: topSuggestion,
@@ -116,8 +111,6 @@ struct FloatingAddressBar: View {
         .onChange(of: customFavoritesJSON) { _, newValue in
             cachedFavorites = decodeFavorites(from: newValue)
         }
-        // Debounce suggestion lookup — 80ms feels instant but avoids hitting
-        // Core Data on every single keystroke.
         .onChange(of: urlString) { _, newValue in
             debounceTask?.cancel()
             guard !newValue.isEmpty else {

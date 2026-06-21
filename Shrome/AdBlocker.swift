@@ -2,6 +2,8 @@
 //  AdBlocker.swift
 //  Shrome
 //
+//  Created by Harsh Shah on 06/03/2026.
+//
 
 import Foundation
 import WebKit
@@ -18,14 +20,6 @@ class AdBlocker: ObservableObject {
     }
     
     private func compileRules() {
-        // FIX: `.ytd-ad-slot-renderer` (and friends) previously had a leading
-        // dot, treating it as a CLASS selector. YouTube's ad containers
-        // aren't classed that way — they're custom element TAG names
-        // (Polymer/LitElement web components, e.g. <ytd-ad-slot-renderer>).
-        // A dot-prefixed selector can never match a tag name, so that rule
-        // was a silent no-op. Switched to proper tag selectors and added
-        // the other companion/sidebar/in-feed ad tags YouTube actually uses
-        // (this is what was letting the right-rail "Sponsored" card through).
         let rulesJSON = """
         [
             {
@@ -182,8 +176,6 @@ class AdBlocker: ObservableObject {
         return WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: false)
     }
     
-    // --- NEW: THE DNS & PRECONNECT EXPRESS ENGINE ---
-    /// Injects header linkage hints to resolve domains before the web view actively drives standard requests.
     func getPreconnectScript(for urlString: String) -> WKUserScript? {
         guard let url = URL(string: urlString), let host = url.host else { return nil }
         

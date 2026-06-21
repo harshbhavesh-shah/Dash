@@ -2,22 +2,19 @@
 //  GravityPreferencesView.swift
 //  Shrome
 //
+//  Created by Harsh Shah on 06/03/2026.
+//
 
 import SwiftUI
 import AppKit
 import Combine
 
-// --- STARTUP BEHAVIOR ENUM ---
 enum StartupBehavior: String, CaseIterable {
     case leftOff       = "Continue where I left off"
     case firstGroupTab = "First tab of a tab group"
     case newTab        = "Start at the new tab page"
 }
 
-// --- APPEARANCE MODE ENUM ---
-// .automatic defers to SunAppearanceManager, which computes today's
-// sunrise/sunset for the device's approximate location and flips the
-// appearance live at the right moment — see SunAppearance.swift.
 enum AppearanceMode: String, CaseIterable {
     case light     = "Light"
     case dark      = "Dark"
@@ -26,9 +23,6 @@ enum AppearanceMode: String, CaseIterable {
 
 // MARK: - Preferences Data Model
 class GravityPreferences: ObservableObject {
-    // Same key NameOnboardingView writes to on first launch — editing it
-    // here just lets the user revisit that choice later instead of being
-    // stuck with whatever they entered (or skipped) on day one.
     @AppStorage("userPreferredName") var userPreferredName: String = ""
 
     @AppStorage("homepage")         var homepage: String = ""
@@ -85,14 +79,6 @@ enum PrefsSection: String, CaseIterable {
 }
 
 // MARK: - Window Titlebar Hider
-// UI FIX: The Settings scene always renders a macOS titlebar above the SwiftUI
-// view frame. No SwiftUI background modifier can paint into that zone, so the
-// sidebar tint always stops short of the top of the window — making the title
-// look like it's floating between two uncoloured sections.
-// This NSViewRepresentable reaches into the NSWindow on appear and sets
-// titlebarAppearsTransparent = true, which merges the titlebar region into the
-// view's drawable area. The sidebar background can then fill the full height
-// from top to bottom with no gap, and the title text sits cleanly inside it.
 private struct PrefsTitlebarHider: NSViewRepresentable {
     let accentColor: Color
 
@@ -123,9 +109,6 @@ struct GravityPreferencesView: View {
     @StateObject private var prefs = GravityPreferences()
     @State private var selectedSection: PrefsSection = .general
 
-    // Live day/night state for Automatic appearance — observed here too so
-    // the Preferences window itself flips at sunset/sunrise in real time,
-    // not just the main browser window.
     @ObservedObject private var sunAppearance = SunAppearanceManager.shared
 
     private var isDarkActive: Bool {
@@ -139,11 +122,6 @@ struct GravityPreferencesView: View {
     var body: some View {
         HStack(spacing: 0) {
             // MARK: Sidebar
-            // UI FIX: Sidebar is now 210pt wide (up from 180) so "Shrome Settings"
-            // fits comfortably without wrapping, and the section rows have
-            // breathing room. The title sits at padding(.top, 44) to clear the
-            // traffic light buttons now that the titlebar is transparent and
-            // merged into this view's frame.
             VStack(alignment: .leading, spacing: 4) {
                 Text("Shrome Settings")
                     .font(.system(size: 11, weight: .bold))
@@ -169,8 +147,6 @@ struct GravityPreferencesView: View {
             }
             .frame(width: 210)
             .background(prefs.accentColor.opacity(0.12))
-            // Attach the titlebar hider here so it reads the window as soon
-            // as the sidebar column appears on screen.
             .background(
                 PrefsTitlebarHider(accentColor: prefs.accentColor)
                     .frame(width: 0, height: 0)

@@ -2,6 +2,8 @@
 //  SidebarView.swift
 //  Shrome
 //
+//  Created by Harsh Shah on 06/03/2026.
+//
 
 import SwiftUI
 
@@ -14,9 +16,6 @@ struct SidebarView: View {
     @AppStorage("accentColorRed") private var r: Double = 0.96
     @AppStorage("accentColorGreen") private var g: Double = 0.55
     @AppStorage("accentColorBlue") private var b: Double = 0.72
-
-    // FIX: Needed so "+" creates a PRIVATE tab when this sidebar is hosted
-    // in a private window — see createNewTab() call below.
     @Environment(\.isPrivateWindow) private var isPrivateWindow
 
     var accentColor: Color { Color(red: r, green: g, blue: b) }
@@ -42,15 +41,7 @@ struct SidebarView: View {
                 .buttonStyle(.bouncy)
 
                 Button(action: {
-                    withAnimation(.shromeBouncy) {
-                        // FIX: Was tabManager.createNewTab() with no
-                        // isPrivate argument — defaulted to false, so a tab
-                        // opened from this button inside a private window
-                        // was silently NOT private (would get saved to
-                        // history, included in session restore, etc.)
-                        // despite the user believing the whole window was
-                        // private.
-                        tabManager.createNewTab(isPrivate: isPrivateWindow)
+                    withAnimation(.shromeBouncy) {                        tabManager.createNewTab(isPrivate: isPrivateWindow)
                     }
                 }) {
                     Image(systemName: "plus.circle.fill")
@@ -71,7 +62,6 @@ struct SidebarView: View {
             }
             .frame(width: isVisible ? 80 : 55)
 
-            // --- THE TAB DRAWER ---
             if isVisible {
                 tabContent
                     .transition(.move(edge: .leading).combined(with: .opacity))
@@ -95,7 +85,6 @@ struct SidebarView: View {
                             .foregroundColor(.primary.opacity(0.4))
                             .padding(.leading, 12)
 
-                        // PERF FIX: Filter computed once here, not inside ForEach.
                         let unassignedTabs = tabManager.tabs.filter { $0.groupId == nil }
 
                         if unassignedTabs.isEmpty {
@@ -105,13 +94,6 @@ struct SidebarView: View {
                                 .padding(.leading, 12)
                                 .padding(.vertical, 4)
                         } else {
-                            // PERF FIX: TabRow no longer holds @ObservedObject tabManager.
-                            // Instead it receives only the plain value-type Tab it needs to
-                            // display, plus two focused callbacks for the two actions it can
-                            // trigger (activate, close). SwiftUI can now skip re-rendering any
-                            // row whose Tab struct hasn't changed — previously every tab row
-                            // re-rendered whenever *any* tab anywhere changed, because they all
-                            // shared the same @ObservedObject reference.
                             ForEach(unassignedTabs) { tab in
                                 TabRow(
                                     tab: tab,
@@ -155,9 +137,6 @@ struct SidebarView: View {
 // MARK: - Tab Row
 
 struct TabRow: View {
-    // PERF FIX: Plain value-type Tab instead of @ObservedObject TabManager.
-    // This row now only re-renders when its own Tab value changes, not when
-    // any other tab in the manager changes.
     let tab: Tab
     let isActive: Bool
     let groups: [TabGroup]
@@ -173,10 +152,6 @@ struct TabRow: View {
 
     var accentColor: Color { Color(red: r, green: g, blue: b) }
 
-    // PERF FIX: Favicon URL is a stable computed value derived from the tab's
-    // host. By giving AsyncImage a consistent URL that only changes when the
-    // host actually changes, SwiftUI reuses the existing view — preventing
-    // redundant network fetches on hover-triggered re-renders.
     private var faviconURL: URL? {
         guard let host = tab.url.host, !host.isEmpty else { return nil }
         return URL(string: "https://www.google.com/s2/favicons?sz=64&domain=\(host)")
@@ -184,9 +159,6 @@ struct TabRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // PERF FIX: .id(tab.url.host) gives AsyncImage a stable identity
-            // tied to the domain. Without this, any parent re-render causes
-            // AsyncImage to discard its cached image and start a fresh fetch.
             AsyncImage(url: faviconURL) { phase in
                 if let image = phase.image {
                     image.resizable()
@@ -251,10 +223,6 @@ struct TabRow: View {
                 }
 
                 Divider()
-
-                // PERF FIX: Groups passed in as a plain [TabGroup] array.
-                // Previously ForEach here pulled from tabManager directly,
-                // creating another hidden dependency on the full @ObservedObject.
                 ForEach(groups) { group in
                     Button(action: { onMoveToGroup(group.id) }) {
                         Label(group.name, systemImage: group.icon)
@@ -277,11 +245,6 @@ struct DynamicTrafficLights: View {
     let maxColor   = Color(red: 39/255,  green: 201/255, blue: 63/255)
 
     var body: some View {
-        // PERF FIX: Replaced AnyLayout wrapping VStackLayout/HStackLayout.
-        // AnyLayout erases type information, forcing SwiftUI to discard and
-        // rebuild the entire layout subtree on every isVertical toggle.
-        // A plain if/else lets SwiftUI keep each branch in the view hierarchy
-        // and simply animate between them without a full layout cache flush.
         if isVertical {
             VStack(spacing: 8) { buttons }
         } else {

@@ -7,23 +7,11 @@
 
 import SwiftUI
 
-// Keeping this around as a fallback in case other files still call Color.babyPink!
 extension Color {
     static let babyPink = Color(red: 1.0, green: 0.75, blue: 0.85)
-
-    // FIX: Single source of truth for "this is a private/incognito surface"
-    // styling. Previously scattered as bare `.purple` across ContentView's
-    // lock screen, FloatingAddressBar, and GravityLandingView's favorite-tile
-    // icon — each a slightly different shade/opacity, and the sidebar had no
-    // private indication at all. Deliberately kept distinct from the user's
-    // chosen accent theme (rather than reusing `accentColor`) so private
-    // windows stay visually unmistakable, per the same logic Safari/Chrome
-    // use a different color identity for private/incognito — that contrast
-    // is itself a privacy safety signal, not just decoration.
     static let shromePrivate = Color(red: 0.64, green: 0.42, blue: 0.96)
 }
 
-// --- YOUR CUSTOM GLASS AESTHETIC ---
 struct PolishedGlass: ViewModifier {
     @AppStorage("accentColorRed") private var r: Double = 0.91
     @AppStorage("accentColorGreen") private var g: Double = 0.80
@@ -37,13 +25,9 @@ struct PolishedGlass: ViewModifier {
         content
             .background(
                 ZStack {
-                    // Base AppKit blur
                     LiquidGlass()
-                    
-                    // The dynamic color tint
                     accentColor.opacity(0.12)
                     
-                    // The "Stuff" (Refractions)
                     LinearGradient(
                         gradient: Gradient(colors: [.white.opacity(0.18), .clear, .clear]),
                         startPoint: .topLeading,
@@ -68,37 +52,17 @@ extension View {
     }
 }
 
-// --- MOTION: SHROME'S SHARED ANIMATION LANGUAGE ---
-// One small set of named springs used everywhere instead of one-off
-// response/dampingFraction values scattered across files. Lower damping
-// fractions here than you'd usually reach for — that's intentional, it's
-// what gives the UI its playful little overshoot instead of settling flatly.
 extension Animation {
-    /// Shrome's signature motion: a confident, slightly overshooting spring
-    /// for the "big" moments — page swaps, sidebar slides, the address bar
-    /// morphing between landing search and floating bar, the private-window
-    /// unlock reveal. Bouncy enough to feel alive, controlled enough to stay clean.
     static var shromeBouncy: Animation {
         .spring(response: 0.42, dampingFraction: 0.68)
     }
-
-    /// A lighter, quicker bounce for everyday state changes — hover reveals,
-    /// toggles, tab activation/closing, row highlights. The workhorse spring.
     static var shromeSnappy: Animation {
         .spring(response: 0.3, dampingFraction: 0.62)
     }
-
-    /// A tiny, punchy pop for direct touch/click feedback — button presses,
-    /// icon taps, favorite hearts. Fast in, fast out, unmistakable overshoot.
     static var shromePop: Animation {
         .spring(response: 0.22, dampingFraction: 0.55)
     }
 }
-
-/// A reusable press style: scales a button down on press and springs it back
-/// on release. Drop onto any `.plain` or `.borderless` button with
-/// `.buttonStyle(.bouncy)` to get tactile feedback for free, instead of
-/// hand-rolling isPressed state per button.
 struct BouncyButtonStyle: ButtonStyle {
     var pressedScale: CGFloat = 0.9
 
@@ -114,7 +78,6 @@ extension ButtonStyle where Self == BouncyButtonStyle {
     static func bouncy(scale: CGFloat) -> BouncyButtonStyle { BouncyButtonStyle(pressedScale: scale) }
 }
 
-// --- NEW: THE GLOBAL CODESPACE THEME MATRIX ---
 enum ShromeTheme: String, CaseIterable, Identifiable, Codable {
     case cosmicPastel   = "Cosmic Pastel"
     case cyberpunkNeon  = "Night City"

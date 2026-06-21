@@ -2,6 +2,8 @@
 //  ContentView.swift
 //  Shrome
 //
+//  Created by Harsh Shah on 06/03/2026.
+//
 
 import SwiftUI
 import AppKit
@@ -12,46 +14,22 @@ struct ContentView: View {
     @StateObject private var tabManager = TabManager()
     @State private var isSidebarVisible = false
     @State private var showHistoryPanel = false
-
     @Namespace private var addressBarNamespace
-
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .light
     @AppStorage("autoHideSidebar") private var autoHideSidebar: Bool = false
     @AppStorage("searchEngine") private var searchEngine: String = "Google"
-
-    // Live day/night state, only consulted when appearanceMode == .automatic
-    // — see SunAppearance.swift.
     @ObservedObject private var sunAppearance = SunAppearanceManager.shared
-
-    // The name shown in the landing page greeting, captured once via
-    // NameOnboardingView on first launch. hasCompletedNameOnboarding is
-    // tracked separately from the name itself so skipping (leaving the
-    // name blank) doesn't cause the prompt to keep reappearing.
     @AppStorage("userPreferredName") private var userPreferredName: String = ""
     @AppStorage("hasCompletedNameOnboarding") private var hasCompletedNameOnboarding: Bool = false
-
     @Environment(\.isPrivateWindow) private var isPrivateWindow
     @Environment(\.openWindow) private var openWindow
     @Environment(\.managedObjectContext) private var viewContext
-
     @State private var isEdgeHovered = false
     @State private var hideTask: Task<Void, Never>? = nil
-
     @State private var isPrivateWindowUnlocked = false
     @AppStorage("requirePrivateWindowAuth") private var requirePrivateWindowAuth: Bool = true
     @State private var biometricErrorMessage: String? = nil
-
-    // Reference to this window, resolved via WindowHacker — needed so
-    // "close the last tab" can close the actual window rather than just
-    // mutating tab state.
     @State private var hostWindow: NSWindow?
-
-    // PERF FIX: Separate the text the user is actively typing from the URL
-    // the WebView should load. Previously both shared the same urlString
-    // binding on Tab, which meant every keystroke in the address bar mutated
-    // tab.url and triggered updateNSView in WebView — potentially firing a
-    // mid-typed URL load on every character. displayURLString is local to
-    // ContentView and only committed to the tab model when the user submits.
     @State private var displayURLString: String = ""
 
     private var isLandingPage: Bool {
@@ -77,8 +55,6 @@ struct ContentView: View {
         autoHideSidebar && !isSidebarVisible && !isEdgeHovered
     }
 
-    // PERF FIX: addressBarBinding now drives displayURLString, not
-    // tab.urlString directly. The WebView only sees committed URLs.
     private var addressBarBinding: Binding<String> {
         Binding(
             get: { displayURLString },
@@ -116,12 +92,8 @@ struct ContentView: View {
     }
 
     private func executeAddressBarSubmit() {
-        // Commit the display string into the tab model, which is what
-        // triggers the actual WebView navigation.
-        tabManager.updateActiveUrl(urlString: displayURLString, searchEngine: searchEngine)
 
-        // Sync display string back to the resolved URL after commit
-        // so the bar shows the canonical form (e.g. https:// prepended).
+        tabManager.updateActiveUrl(urlString: displayURLString, searchEngine: searchEngine)
         DispatchQueue.main.async {
             displayURLString = tabManager.activeTab.urlString
         }
@@ -168,7 +140,6 @@ struct ContentView: View {
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // LAYER 2: Sliding Sidebar
             SidebarView(tabManager: tabManager, isVisible: browserSidebarBinding)
                 .offset(x: sidebarOffset)
                 .onHover { hovering in
@@ -188,10 +159,8 @@ struct ContentView: View {
                     .zIndex(11)
             }
 
-            // LAYER 3: Floating Address Bar
             bottomBarLayer
 
-            // LAYER 4: Private Session Lock Shield
             if isPrivateWindow && requirePrivateWindowAuth && !isPrivateWindowUnlocked {
                 ZStack {
                     Color.clear
@@ -232,10 +201,6 @@ struct ContentView: View {
                 .zIndex(100)
             }
 
-            // LAYER 5: First-Launch Name Onboarding
-            // Regular windows only — a private window has nothing to
-            // personalize, since it always greets as "Stranger" regardless
-            // of the stored name.
             if !isPrivateWindow && !hasCompletedNameOnboarding {
                 NameOnboardingView { name in
                     withAnimation(.shromeBouncy) {
@@ -255,7 +220,6 @@ struct ContentView: View {
             .frame(width: 0, height: 0)
         )
         .onAppear {
-            // Seed the display string from the active tab on first appear.
             displayURLString = tabManager.activeTab.urlString == "about:blank"
                 ? ""
                 : tabManager.activeTab.urlString
@@ -277,36 +241,20 @@ struct ContentView: View {
                 }
             }
         }
-        // PERF FIX: Cancel the pending hide timer if the view disappears
-        // (e.g. window closed while hover delay is in flight). Without this
-        // the Task holds a reference keeping the view alive and may fire
-        // a UI update on a deallocated context.
         .onDisappear {
             hideTask?.cancel()
         }
-        // FIX: WebViewPool's per-tab registry is a long-lived singleton
-        // that outlives any individual window — closing a tab releases its
-        // own webview (see TabManager.closeTab), but closing the entire
-        // WINDOW (without closing each tab first) previously left every
-        // one of its tabs' WKWebViews leaked in the registry forever, since
-        // nothing told the pool "this whole window, and everything in it,
-        // is gone."
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { notification in
             guard let closingWindow = notification.object as? NSWindow, closingWindow === hostWindow else { return }
             for tab in tabManager.tabs {
                 WebViewPool.shared.releaseWebView(for: tab.id)
             }
         }
-        // Sync displayURLString whenever the active tab changes externally
-        // (tab switch, back/forward navigation, link click opening new tab).
         .onChange(of: tabManager.activeTabId) { _, _ in
             let urlStr = tabManager.activeTab.urlString
             displayURLString = urlStr == "about:blank" ? "" : urlStr
         }
         .onChange(of: tabManager.activeTab.urlString) { _, newValue in
-            // Keep display bar in sync when WebView navigates on its own
-            // (redirects, in-page link clicks) — but only if the user isn't
-            // actively editing (i.e. the committed URL changed, not a draft).
             if newValue != "about:blank" {
                 displayURLString = newValue
             }
@@ -325,12 +273,6 @@ struct ContentView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionCloseTab"))) { _ in
-            // FIX: This used to just no-op once only one tab was left
-            // (guarded out inside closeTab itself), which is why "closing
-            // the tab" appeared to do nothing at all. Classic Mac behavior
-            // is that closing the last tab closes the window — so once
-            // there's nothing left to close *within* the window, close the
-            // window itself instead of swallowing the shortcut.
             if tabManager.tabs.count <= 1 {
                 (hostWindow ?? NSApplication.shared.keyWindow)?.close()
             } else {
@@ -369,12 +311,6 @@ struct ContentView: View {
                 tabManager.selectLastTab()
             }
         }
-        // FIX: Now that every tab owns its own persistent webview (see
-        // WebViewPool), Back/Forward can just ask for the ACTIVE tab's
-        // instance directly instead of broadcasting to every open tab's
-        // webview and hoping only the right one reacts — existingWebView
-        // never creates one, so this is also a no-op for a tab that's
-        // still on the landing page and has no webview yet.
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionGoBack"))) { _ in
             guard let webView = WebViewPool.shared.existingWebView(for: tabManager.activeTabId), webView.canGoBack else { return }
             webView.goBack()

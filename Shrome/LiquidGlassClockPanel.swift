@@ -2,34 +2,19 @@
 //  LiquidGlassClockPanel.swift
 //  Shrome
 //
-//  A small glass card showing the current time + date, roughly the
-//  footprint of the Music widget in macOS Control Center. The time uses
-//  SwiftUI's `.numericText()` content transition — the same mechanism
-//  behind the digit roll/blur-fade you see on the iOS Lock Screen clock
-//  and in places like the Dynamic Island: unchanged digits hold still,
-//  only the digit that actually changed crossfades to its new value.
+//  Created by Harsh Shah on 06/03/2026.
 //
 
 import SwiftUI
 import Combine
 
 struct LiquidGlassClockPanel: View {
-    /// Single source of truth for the landing page's corner widget
-    /// stack — LiquidGlassNowPlayingWidget mirrors this so the two cards
-    /// line up at exactly the same width, rather than each guessing a
-    /// number that could drift out of sync later.
     static let widgetWidth: CGFloat = 220
-
-    /// Mirrors the readability treatment used elsewhere on the landing
-    /// page — a touch more glass opacity and a soft text shadow once a
-    /// custom background photo is set, so the card stays legible without
-    /// changing its look over the default frosted background.
     var hasBackgroundPhoto: Bool
 
     @AppStorage("accentColorRed") private var r: Double = 0.96
     @AppStorage("accentColorGreen") private var g: Double = 0.55
     @AppStorage("accentColorBlue") private var b: Double = 0.72
-
     @State private var displayTime: String = ""
     @State private var displayDate: String = ""
 
@@ -86,10 +71,6 @@ struct LiquidGlassClockPanel: View {
             displayTime = timeString(from: now)
             displayDate = dateString(from: now)
         }
-        // A 1s tick is cheap (just string formatting + comparison) and lets
-        // us only animate when the displayed value actually changes — once
-        // a minute for the time, once a day for the date — rather than
-        // re-triggering the transition every tick.
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { now in
             let newTime = timeString(from: now)
             if newTime != displayTime {

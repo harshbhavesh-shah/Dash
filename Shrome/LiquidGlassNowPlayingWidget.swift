@@ -2,9 +2,7 @@
 //  LiquidGlassNowPlayingWidget.swift
 //  Shrome
 //
-//  A small glass card mirroring the Music widget in macOS Control Center —
-//  album art, title/artist, and transport controls for whatever's playing
-//  system-wide (Music, Spotify, a YouTube tab, anything).
+//  Created by Harsh Shah on 06/03/2026.
 //
 
 import SwiftUI
@@ -12,10 +10,6 @@ import Combine
 import MediaRemoteAdapter
 
 // MARK: - Shared System Now-Playing State
-
-/// Singleton wrapping MediaRemoteAdapter's MediaController, so every
-/// window's widget reflects the same system-wide playback state from a
-/// single background listener rather than each one spawning its own.
 class SystemNowPlayingMonitor: ObservableObject {
     static let shared = SystemNowPlayingMonitor()
 
@@ -193,8 +187,6 @@ struct LiquidGlassNowPlayingWidget: View {
                 }
         }
     }
-
-    // --- REFINED EXTENSION: GLASS-BLENDED TRANSPORT CONTROLS ---
     private func transportButton(systemName: String, prominent: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemName)

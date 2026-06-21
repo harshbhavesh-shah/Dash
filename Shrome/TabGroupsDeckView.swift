@@ -2,6 +2,8 @@
 //  TabGroupsDeckView.swift
 //  Shrome
 //
+//  Created by Harsh Shah on 06/03/2026.
+//
 
 import SwiftUI
 
@@ -9,18 +11,13 @@ import SwiftUI
 struct OpenSidebarGroupsDeck: View {
     @ObservedObject var tabManager: TabManager
     @State private var expandedGroups: Set<UUID> = []
-
-    // FIX: Needed so "Add New Tab to {group}" creates a private tab when
-    // this is hosted in a private window — see contextMenu below.
     @Environment(\.isPrivateWindow) private var isPrivateWindow
 
-    // States for creating a custom group
     @State private var showCreationPopover = false
     @State private var newGroupName = ""
     @State private var selectedIcon = "folder.fill"
     @State private var selectedColorName = "Rose"
     
-    // Icon and Color options for the creation matrix
     let availableIcons = ["folder.fill", "briefcase.fill", "person.fill", "gamecontroller.fill", "book.fill", "bookmark.fill", "heart.fill", "star.fill"]
     let availableColors = ["Rose", "Sage", "Peach", "Lilac", "Sky"]
     
@@ -72,14 +69,10 @@ struct OpenSidebarGroupsDeck: View {
                     }
                     .contextMenu {
                         Button("Add New Tab to \(group.name)") {
-                            // FIX: Was missing isPrivate: — defaulted to
-                            // false, so a tab added to a group from inside a
-                            // private window silently wasn't private.
                             tabManager.createNewTab(isPrivate: isPrivateWindow, targetGroupId: group.id)
                         }
                     }
                     
-                    // Child Tab Sub-List
                     if isExpanded {
                         VStack(spacing: 2) {
                             if groupTabs.isEmpty {
@@ -118,7 +111,6 @@ struct OpenSidebarGroupsDeck: View {
                 }
             }
             
-            // --- NEW: THE INLINE DYNAMIC CREATION BUTTON ---
             Button(action: { showCreationPopover = true }) {
                 HStack(spacing: 6) {
                     Image(systemName: "plus.circle")
@@ -140,7 +132,6 @@ struct OpenSidebarGroupsDeck: View {
                         .textFieldStyle(.roundedBorder)
                         .font(.system(size: 12))
                     
-                    // Icon selector row
                     Text("Icon")
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundColor(.secondary)
@@ -156,7 +147,6 @@ struct OpenSidebarGroupsDeck: View {
                         }
                     }
                     
-                    // Color selector row
                     Text("Color Accent")
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundColor(.secondary)
@@ -200,10 +190,6 @@ struct OpenSidebarGroupsDeck: View {
 // MARK: - COMPACT COLLAPSED SIDEBAR VIEW COMPONENT
 struct CollapsedSidebarGroupsDeck: View {
     @ObservedObject var tabManager: TabManager
-
-    // FIX: Same propagation fix as OpenSidebarGroupsDeck above — tapping an
-    // empty group's icon here also needs to respect the window's private
-    // state.
     @Environment(\.isPrivateWindow) private var isPrivateWindow
 
     var body: some View {
