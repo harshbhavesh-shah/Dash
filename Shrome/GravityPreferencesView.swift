@@ -9,11 +9,9 @@ import SwiftUI
 import AppKit
 import Combine
 
-enum StartupBehavior: String, CaseIterable {
-    case leftOff       = "Continue where I left off"
-    case firstGroupTab = "First tab of a tab group"
-    case newTab        = "Start at the new tab page"
-}
+
+
+
 
 enum AppearanceMode: String, CaseIterable {
     case light     = "Light"
