@@ -9,9 +9,11 @@ import SwiftUI
 import AppKit
 import Combine
 
-
-
-
+enum StartupBehavior: String, CaseIterable {
+    case leftOff       = "Continue where I left off"
+    case firstGroupTab = "First tab of a tab group"
+    case newTab        = "Start at the new tab page"
+}
 
 enum AppearanceMode: String, CaseIterable {
     case light     = "Light"
@@ -77,6 +79,14 @@ enum PrefsSection: String, CaseIterable {
 }
 
 // MARK: - Window Titlebar Hider
+// UI FIX: The Settings scene always renders a macOS titlebar above the SwiftUI
+// view frame. No SwiftUI background modifier can paint into that zone, so the
+// sidebar tint always stops short of the top of the window — making the title
+// look like it's floating between two uncoloured sections.
+// This NSViewRepresentable reaches into the NSWindow on appear and sets
+// titlebarAppearsTransparent = true, which merges the titlebar region into the
+// view's drawable area. The sidebar background can then fill the full height
+// from top to bottom with no gap, and the title text sits cleanly inside it.
 private struct PrefsTitlebarHider: NSViewRepresentable {
     let accentColor: Color
 
@@ -106,7 +116,6 @@ private struct PrefsTitlebarHider: NSViewRepresentable {
 struct GravityPreferencesView: View {
     @StateObject private var prefs = GravityPreferences()
     @State private var selectedSection: PrefsSection = .general
-
     @ObservedObject private var sunAppearance = SunAppearanceManager.shared
 
     private var isDarkActive: Bool {
@@ -122,8 +131,8 @@ struct GravityPreferencesView: View {
             // MARK: Sidebar
             VStack(alignment: .leading, spacing: 4) {
                 Text("Shrome Settings")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.primary.opacity(1))
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.primary.opacity(0.5))
                     .padding(.horizontal, 16)
                     .padding(.top, 44)   // clears the traffic lights
                     .padding(.bottom, 10)

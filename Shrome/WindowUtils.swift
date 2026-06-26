@@ -10,7 +10,9 @@ import AppKit
 import WebKit
 
 extension Notification.Name {
-    static let openNewTabFromLink = Notification.Name("openNewTabFromLink")
+    static let openNewTabFromLink    = Notification.Name("openNewTabFromLink")
+    static let openNewWindowWithURL  = Notification.Name("openNewWindowWithURL")
+    static let openURLInNewWindow    = Notification.Name("openURLInNewWindow")
 }
 
 struct WebView: NSViewRepresentable {
@@ -89,12 +91,30 @@ struct WebView: NSViewRepresentable {
             }
         }
         
-        func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-            if navigationAction.targetFrame == nil {
-                if let url = navigationAction.request.url {
-                    DispatchQueue.main.async {
-                        NotificationCenter.default.post(name: .openNewTabFromLink, object: url)
-                    }
+        func webView(_ webView: WKWebView,
+                     createWebViewWith configuration: WKWebViewConfiguration,
+                     for navigationAction: WKNavigationAction,
+                     windowFeatures: WKWindowFeatures) -> WKWebView? {
+
+            guard let url = navigationAction.request.url,
+                  url.absoluteString != "about:blank" else { return nil }
+
+            DispatchQueue.main.async {
+                let wantsNewWindow = (windowFeatures.width != nil ||
+                                      windowFeatures.height != nil ||
+                                      windowFeatures.x != nil ||
+                                      windowFeatures.y != nil)
+
+                if wantsNewWindow {
+                    NotificationCenter.default.post(
+                        name: .openNewWindowWithURL,
+                        object: url
+                    )
+                } else {
+                    NotificationCenter.default.post(
+                        name: .openNewTabFromLink,
+                        object: url
+                    )
                 }
             }
             return nil

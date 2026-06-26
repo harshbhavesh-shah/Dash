@@ -11,21 +11,28 @@ import LocalAuthentication
 import WebKit
 
 struct ContentView: View {
+    var initialURL: URL? = nil
+
     @StateObject private var tabManager = TabManager()
     @State private var isSidebarVisible = false
     @State private var showHistoryPanel = false
+
     @Namespace private var addressBarNamespace
+
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .light
     @AppStorage("autoHideSidebar") private var autoHideSidebar: Bool = false
     @AppStorage("searchEngine") private var searchEngine: String = "Google"
     @ObservedObject private var sunAppearance = SunAppearanceManager.shared
     @AppStorage("userPreferredName") private var userPreferredName: String = ""
     @AppStorage("hasCompletedNameOnboarding") private var hasCompletedNameOnboarding: Bool = false
+
     @Environment(\.isPrivateWindow) private var isPrivateWindow
     @Environment(\.openWindow) private var openWindow
     @Environment(\.managedObjectContext) private var viewContext
+
     @State private var isEdgeHovered = false
     @State private var hideTask: Task<Void, Never>? = nil
+
     @State private var isPrivateWindowUnlocked = false
     @AppStorage("requirePrivateWindowAuth") private var requirePrivateWindowAuth: Bool = true
     @State private var biometricErrorMessage: String? = nil
@@ -54,7 +61,6 @@ struct ContentView: View {
     private var shouldUseNativeButtons: Bool {
         autoHideSidebar && !isSidebarVisible && !isEdgeHovered
     }
-
     private var addressBarBinding: Binding<String> {
         Binding(
             get: { displayURLString },
@@ -92,7 +98,6 @@ struct ContentView: View {
     }
 
     private func executeAddressBarSubmit() {
-
         tabManager.updateActiveUrl(urlString: displayURLString, searchEngine: searchEngine)
         DispatchQueue.main.async {
             displayURLString = tabManager.activeTab.urlString
@@ -140,6 +145,7 @@ struct ContentView: View {
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
+            // LAYER 2: Sliding Sidebar
             SidebarView(tabManager: tabManager, isVisible: browserSidebarBinding)
                 .offset(x: sidebarOffset)
                 .onHover { hovering in
@@ -200,7 +206,6 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .zIndex(100)
             }
-
             if !isPrivateWindow && !hasCompletedNameOnboarding {
                 NameOnboardingView { name in
                     withAnimation(.shromeBouncy) {
@@ -220,9 +225,17 @@ struct ContentView: View {
             .frame(width: 0, height: 0)
         )
         .onAppear {
-            displayURLString = tabManager.activeTab.urlString == "about:blank"
-                ? ""
-                : tabManager.activeTab.urlString
+            if let url = initialURL {
+                tabManager.createNewTab(urlString: url.absoluteString, isPrivate: isPrivateWindow)
+                if let blankTab = tabManager.tabs.first(where: { $0.url.absoluteString == "about:blank" && $0.id != tabManager.activeTabId }) {
+                    tabManager.tabs.removeAll { $0.id == blankTab.id }
+                }
+                displayURLString = url.absoluteString
+            } else {
+                displayURLString = tabManager.activeTab.urlString == "about:blank"
+                    ? ""
+                    : tabManager.activeTab.urlString
+            }
 
             if appearanceMode == .automatic {
                 SunAppearanceManager.shared.activate()
@@ -270,6 +283,12 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionNewTab"))) { _ in
             withAnimation(.shromeBouncy) {
                 tabManager.createNewTab(isPrivate: isPrivateWindow)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .openNewTabFromLink)) { note in
+            guard let url = note.object as? URL else { return }
+            withAnimation(.shromeBouncy) {
+                tabManager.createNewTab(urlString: url.absoluteString, isPrivate: isPrivateWindow)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionCloseTab"))) { _ in
