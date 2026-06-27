@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D8B53F5B2FE7C2C200EEF010 /* MediaRemoteAdapter in Frameworks */ = {isa = PBXBuildFile; productRef = D8B53F5A2FE7C2C200EEF010 /* MediaRemoteAdapter */; };
+		D8B53F5B2FE7C2C200EEF010 /* MediaRemoteAdapter in Frameworks */ = {isa = PBXBuildFile; productRef = D8B53F5A2FE7C2C200EEF010 /* MediaRemoteAdapter */; settings = {ATTRIBUTES = (Weak, ); }; };
 		D8B53F5C2FE7C30B00EEF010 /* MediaRemoteAdapter in Embed Frameworks */ = {isa = PBXBuildFile; productRef = D8B53F5A2FE7C2C200EEF010 /* MediaRemoteAdapter */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		D8E5A3492FE4521400934330 /* ShromeDataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = D8E5A3472FE4521400934330 /* ShromeDataModel.xcdatamodeld */; };
 /* End PBXBuildFile section */
@@ -50,9 +50,22 @@
 		D8E5A3482FE4521400934330 /* ShromeDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = ShromeDataModel.xcdatamodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D85682572FF07C0900130AA5 /* Exceptions for "Shrome" folder in "Shrome" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = D8404EC12F5AE1C600DA54D4 /* Shrome */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		D8404EC42F5AE1C600DA54D4 /* Shrome */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D85682572FF07C0900130AA5 /* Exceptions for "Shrome" folder in "Shrome" target */,
+			);
 			path = Shrome;
 			sourceTree = "<group>";
 		};
@@ -460,8 +473,10 @@
 				ENABLE_RESOURCE_ACCESS_USB = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Shrome/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "\"Used to automatically switch between light and dark mode at sunrise and sunset.\"";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -509,8 +524,10 @@
 				ENABLE_RESOURCE_ACCESS_USB = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Shrome/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "\"Used to automatically switch between light and dark mode at sunrise and sunset.\"";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
