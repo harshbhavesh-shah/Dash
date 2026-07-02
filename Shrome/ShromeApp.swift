@@ -27,6 +27,7 @@ struct ShromeApp: App {
 
     init() {
         WebViewPool.shared.warmUp()
+        TabCycleKeyMonitor.shared.start()
         NotificationCenter.default.addObserver(
             forName: .openNewWindowWithURL,
             object: nil,
@@ -93,6 +94,45 @@ struct ShromeApp: App {
             }
 
             SidebarCommands()
+
+            // --- TABS MENU ---
+            CommandMenu("Tabs") {
+                Button("Next Tab") {
+                    NotificationCenter.default.post(name: Notification.Name("MenuActionNextTab"), object: nil)
+                }
+                .keyboardShortcut("]", modifiers: .command)
+
+                Button("Previous Tab") {
+                    NotificationCenter.default.post(name: Notification.Name("MenuActionPreviousTab"), object: nil)
+                }
+                .keyboardShortcut("[", modifiers: .command)
+
+                Divider()
+
+                ForEach(1...8, id: \.self) { n in
+                    Button("Tab \(n)") {
+                        NotificationCenter.default.post(name: Notification.Name("MenuActionSelectTab"), object: n)
+                    }
+                    .keyboardShortcut(KeyEquivalent(Character(String(n))), modifiers: .command)
+                }
+
+                Button("Last Tab") {
+                    NotificationCenter.default.post(name: Notification.Name("MenuActionSelectLastTab"), object: nil)
+                }
+                .keyboardShortcut("9", modifiers: .command)
+
+                Divider()
+
+                Button("Back") {
+                    NotificationCenter.default.post(name: Notification.Name("MenuActionGoBack"), object: nil)
+                }
+                .keyboardShortcut("[", modifiers: [.command])
+
+                Button("Forward") {
+                    NotificationCenter.default.post(name: Notification.Name("MenuActionGoForward"), object: nil)
+                }
+                .keyboardShortcut("]", modifiers: [.command])
+            }
             CommandMenu("History") {
                 Button("Show Complete History Logs...") {
                     NotificationCenter.default.post(name: Notification.Name("MenuActionShowHistory"), object: nil)
@@ -109,6 +149,34 @@ struct ShromeApp: App {
         
         Settings {
             GravityPreferencesView()
+        }
+    }
+}
+
+// MARK: - Tab Cycle Key Monitor
+class TabCycleKeyMonitor {
+    static let shared = TabCycleKeyMonitor()
+    private var monitor: Any?
+
+    func start() {
+        guard monitor == nil else { return }
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            // Tab key (keyCode 48) with Control held
+            guard event.keyCode == 48,
+                  event.modifierFlags.contains(.control) else { return event }
+
+            if event.modifierFlags.contains(.shift) {
+                NotificationCenter.default.post(
+                    name: Notification.Name("MenuActionPreviousTab"), object: nil
+                )
+            } else {
+                NotificationCenter.default.post(
+                    name: Notification.Name("MenuActionNextTab"), object: nil
+                )
+            }
+            // Returning nil swallows the event so it doesn't also trigger
+            // system focus navigation.
+            return nil
         }
     }
 }

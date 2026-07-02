@@ -24,6 +24,19 @@ struct FloatingAddressBar: View {
     var accentColor: Color { Color(red: r, green: g, blue: b) }
     private var isPrivate: Bool { tabManager.activeTab.isPrivate }
 
+    /// What to show in the address bar when not being edited — just the
+    /// host (e.g. "youtube.com") rather than the full URL with path and
+    /// query parameters. nil when there's no valid URL to abbreviate (e.g.
+    /// while the user is typing a search query before navigating).
+    private var urlDisplayHost: String? {
+        guard !urlString.isEmpty, urlString != "about:blank",
+              !urlString.contains(" ") else { return nil }
+        if let url = URL(string: urlString), let host = url.host {
+            return host.replacingOccurrences(of: "www.", with: "")
+        }
+        return nil
+    }
+
     private var isCurrentPageFavorited: Bool {
         let currentHost = tabManager.activeTab.url.host ?? ""
         guard !currentHost.isEmpty,
@@ -43,8 +56,7 @@ struct FloatingAddressBar: View {
                 text: $urlString,
                 suggestion: topSuggestion,
                 placeholder: "Search or enter website",
-                font: .systemFont(ofSize: 14, weight: .medium),
-                textColor: NSColor.labelColor,
+                font: .systemFont(ofSize: 14, weight: .medium), textColor: NSColor.labelColor, displayOverride: urlDisplayHost,
                 onCommit: {
                     topSuggestion = nil
                     onSubmit()

@@ -17,6 +17,7 @@ struct InlineCompleteTextField: NSViewRepresentable {
     var font: NSFont = .systemFont(ofSize: 14, weight: .medium)
     var textColor: NSColor = .labelColor
     var autoFocusOnAppear: Bool = false
+    var displayOverride: String? = nil
     var onCommit: () -> Void
     var onEscape: () -> Void
 
@@ -49,14 +50,22 @@ struct InlineCompleteTextField: NSViewRepresentable {
 
     func updateNSView(_ nsView: GhostTextField, context: Context) {
         context.coordinator.parent = self
-        if nsView.stringValue != text {
-            nsView.stringValue = text
-            if let editor = nsView.currentEditor() {
-                let end = (text as NSString).length
+
+        let isActive = nsView.currentEditor() != nil
+        // When not focused, show the display alias (e.g. just the host) if
+        // one was provided. When focused, always show the real full text so
+        // the user edits the actual URL, not the alias.
+        let valueToShow = isActive ? text : (displayOverride ?? text)
+
+        if nsView.stringValue != valueToShow {
+            nsView.stringValue = valueToShow
+            if isActive, let editor = nsView.currentEditor() {
+                let end = (valueToShow as NSString).length
                 editor.selectedRange = NSRange(location: end, length: 0)
             }
         }
-        nsView.ghostSuffix = ghostSuffix(for: text, suggestion: suggestion)
+        // Only show ghost suffix while actively editing.
+        nsView.ghostSuffix = isActive ? ghostSuffix(for: text, suggestion: suggestion) : nil
         nsView.needsDisplay = true
     }
 
@@ -95,6 +104,29 @@ struct InlineCompleteTextField: NSViewRepresentable {
         func controlTextDidChange(_ obj: Notification) {
             guard let field = obj.object as? NSTextField else { return }
             parent.text = field.stringValue
+        }
+
+        func controlTextDidBeginEditing(_ obj: Notification) {
+            guard let field = obj.object as? NSTextField else { return }
+            // Switch from display alias to the real full URL so the user
+            // edits the actual address, then select all for quick replacement.
+            if field.stringValue != parent.text {
+                field.stringValue = parent.text
+            }
+            DispatchQueue.main.async {
+                field.currentEditor()?.selectAll(nil)
+            }
+        }
+
+        func controlTextDidEndEditing(_ obj: Notification) {
+            guard let field = obj.object as? GhostTextField else { return }
+            // Switch back to the display alias now that editing is done.
+            let displayValue = parent.displayOverride ?? parent.text
+            if field.stringValue != displayValue {
+                field.stringValue = displayValue
+                field.ghostSuffix = nil
+                field.needsDisplay = true
+            }
         }
 
         func control(_ control: NSControl, textView: NSTextView,
