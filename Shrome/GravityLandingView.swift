@@ -333,12 +333,9 @@ struct GravityLandingView: View {
                 .transition(.opacity)
             }
 
-            VStack(alignment: .trailing, spacing: 16) {
-                LiquidGlassClockPanel(hasBackgroundPhoto: hasBackgroundPhoto)
-                LiquidGlassNowPlayingWidget(hasBackgroundPhoto: hasBackgroundPhoto)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-            .padding(28)
+            LiquidGlassClockPanel(hasBackgroundPhoto: hasBackgroundPhoto)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .padding(28)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {

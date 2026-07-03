@@ -9,7 +9,6 @@ import SwiftUI
 import Combine
 
 struct LiquidGlassClockPanel: View {
-    static let widgetWidth: CGFloat = 220
     var hasBackgroundPhoto: Bool
 
     @AppStorage("accentColorRed") private var r: Double = 0.96
@@ -47,7 +46,7 @@ struct LiquidGlassClockPanel: View {
         }
         .padding(.horizontal, 22)
         .padding(.vertical, 16)
-        .frame(width: Self.widgetWidth, alignment: .leading)
+        .frame(minWidth: 170, alignment: .leading)
         .background {
             ZStack {
                 if hasBackgroundPhoto {

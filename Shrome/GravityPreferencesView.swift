@@ -38,9 +38,7 @@ class GravityPreferences: ObservableObject {
     @AppStorage(BackgroundImageStore.appStorageKey) var landingBackgroundImagePath: String = ""
 
     @AppStorage("appearanceMode")        var appearanceMode: AppearanceMode = .light
-    @AppStorage("sidebarWidth")         var sidebarWidth: Double = 260
     @AppStorage("autoHideSidebar")      var autoHideSidebar: Bool = false
-    @AppStorage("enableAddressBarTint") var enableAddressBarTint: Bool = true
 
     @AppStorage("searchEngine")      var searchEngine: String = "Google"
     @AppStorage("searchSuggestions") var searchSuggestions: Bool = true
@@ -405,23 +403,6 @@ struct AppearanceSection: View {
                     if newMode == .automatic {
                         SunAppearanceManager.shared.activate()
                     }
-                }
-            }
-
-            PrefsRow(label: "Address bar liquid tint", sublabel: "Infuse custom accent profiles into the native glass layer") {
-                Toggle("", isOn: $prefs.enableAddressBarTint)
-                    .toggleStyle(.switch)
-                    .labelsHidden()
-            }
-
-            PrefsRow(label: "Sidebar width", sublabel: "Controls the width of the tab sidebar") {
-                HStack(spacing: 8) {
-                    Slider(value: $prefs.sidebarWidth, in: 200...360, step: 10)
-                        .frame(width: 120)
-                    Text("\(Int(prefs.sidebarWidth))px")
-                        .font(.system(size: 11, design: .monospaced))
-                        .foregroundColor(.primary.opacity(0.5))
-                        .frame(width: 38, alignment: .trailing)
                 }
             }
 

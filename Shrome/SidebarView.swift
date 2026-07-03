@@ -11,7 +11,7 @@ struct SidebarView: View {
     @ObservedObject var tabManager: TabManager
     @Binding var isVisible: Bool
 
-    @AppStorage("sidebarWidth") private var sidebarWidth: Double = 260
+    private let sidebarWidth: CGFloat = 260
 
     @AppStorage("accentColorRed") private var r: Double = 0.96
     @AppStorage("accentColorGreen") private var g: Double = 0.55
@@ -71,7 +71,7 @@ struct SidebarView: View {
         .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
         .padding(.vertical, 16)
         .padding(.leading, 16)
-        .frame(width: isVisible ? CGFloat(sidebarWidth) : 55)
+        .frame(width: isVisible ? sidebarWidth : 55)
     }
 
     private var tabContent: some View {
@@ -130,7 +130,7 @@ struct SidebarView: View {
                 .padding(.top, 34)
             }
         }
-        .frame(width: max(0, CGFloat(sidebarWidth) - 80))
+        .frame(width: max(0, sidebarWidth - 80))
     }
 }
 

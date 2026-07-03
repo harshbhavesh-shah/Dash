@@ -12,7 +12,6 @@ struct FloatingAddressBar: View {
     @ObservedObject var tabManager: TabManager
     var onSubmit: () -> Void
 
-    @AppStorage("enableAddressBarTint") private var enableAddressBarTint: Bool = true
     @AppStorage("accentColorRed") private var r: Double = 0.96
     @AppStorage("accentColorGreen") private var g: Double = 0.55
     @AppStorage("accentColorBlue") private var b: Double = 0.72
@@ -95,21 +94,15 @@ struct FloatingAddressBar: View {
         .padding(.vertical, 16)
         .frame(width: 550)
         .background {
-            if enableAddressBarTint {
-                Color.clear
-                    .glassEffect(
-                        .regular.tint(
-                            isPrivate
-                                ? Color.shromePrivate.opacity(0.12)
-                                : Color.primary.opacity(0.04)
-                        ),
-                        in: Capsule()
-                    )
-            } else {
-                Color.clear
-                    .glassEffect(.regular, in: Capsule())
-                    .background(Capsule().fill(Color(NSColor.controlBackgroundColor).opacity(0.45)))
-            }
+            Color.clear
+                .glassEffect(
+                    .regular.tint(
+                        isPrivate
+                            ? Color.shromePrivate.opacity(0.12)
+                            : Color.primary.opacity(0.04)
+                    ),
+                    in: Capsule()
+                )
         }
         .overlay {
             Capsule()
