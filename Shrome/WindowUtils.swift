@@ -13,6 +13,7 @@ extension Notification.Name {
     static let openNewTabFromLink    = Notification.Name("openNewTabFromLink")
     static let openNewWindowWithURL  = Notification.Name("openNewWindowWithURL")
     static let openURLInNewWindow    = Notification.Name("openURLInNewWindow")
+    static let shromeDidClearAllHistory = Notification.Name("shromeDidClearAllHistory")
 }
 
 struct WebView: NSViewRepresentable {

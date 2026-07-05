@@ -346,6 +346,11 @@ struct GravityLandingView: View {
                 isGlowPulsing = true
             }
         }
+        .onDisappear {
+            // BUG FIX: same reasoning as FloatingAddressBar — tie this
+            // task's lifetime to the view instead of letting it run detached.
+            debounceTask?.cancel()
+        }
         .onChange(of: landingBackgroundImagePath) { _, newPath in
             withAnimation(.shromeBouncy) {
                 cachedBackgroundImage = BackgroundImageStore.loadImage(at: newPath)

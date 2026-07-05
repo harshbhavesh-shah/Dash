@@ -101,9 +101,18 @@ struct ContentView: View {
     }
 
     private func executeAddressBarSubmit() {
+        // BUG FIX: this used to resync via `tabManager.activeTab` inside the
+        // async block below, read at *execution* time. If the user switches
+        // tabs before that block runs (easy to do typing fast across tabs),
+        // it clobbers whatever they're now typing in the new tab with the
+        // tab that was actually just submitted. Capture which tab this
+        // submission was for, and only resync if it's still the active one.
+        let submittedTabId = tabManager.activeTabId
         tabManager.updateActiveUrl(urlString: displayURLString, searchEngine: searchEngine)
         DispatchQueue.main.async {
-            displayURLString = tabManager.activeTab.urlString
+            guard tabManager.activeTabId == submittedTabId,
+                  let tab = tabManager.tabs.first(where: { $0.id == submittedTabId }) else { return }
+            displayURLString = tab.urlString
         }
 
         withAnimation(.shromeBouncy) { }
@@ -349,6 +358,13 @@ struct ContentView: View {
                     tabManager: tabManager,
                     onSubmit: executeAddressBarSubmit
                 )
+                // BUG FIX: this view previously persisted across tab
+                // switches, so its in-flight autocomplete task, ghost-text
+                // suffix, and editor state could leak from one tab into the
+                // next if you switched fast enough. Keying it to the active
+                // tab forces SwiftUI to tear down and recreate it —
+                // Coordinator and all — every time the active tab changes.
+                .id(tabManager.activeTabId)
                 .matchedGeometryEffect(id: "sharedAddressBarKey", in: addressBarNamespace)
                 .padding(.bottom, 40)
                 .transition(.asymmetric(insertion: .identity, removal: .opacity))

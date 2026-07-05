@@ -8,6 +8,7 @@
 import SwiftUI
 import AppKit
 import Combine
+import WebKit
 
 enum StartupBehavior: String, CaseIterable {
     case leftOff       = "Continue where I left off"
@@ -493,6 +494,9 @@ struct SearchSection: View {
 // MARK: - Privacy Section
 struct PrivacySection: View {
     @ObservedObject var prefs: GravityPreferences
+    @Environment(\.managedObjectContext) private var viewContext
+    @State private var showClearAllConfirmation = false
+    @State private var isClearing = false
 
     var body: some View {
         PrefsSectionHeader(title: "Privacy")
@@ -526,13 +530,61 @@ struct PrivacySection: View {
         HStack {
             Spacer()
             Button(role: .destructive) {
-                // Wipe the mainframe
+                showClearAllConfirmation = true
             } label: {
-                Label("Clear All Data Now", systemImage: "trash")
+                Label(isClearing ? "Clearing…" : "Clear All Data Now", systemImage: "trash")
                     .font(.system(size: 12, weight: .medium))
             }
             .buttonStyle(.bouncy)
             .foregroundColor(.red.opacity(0.8))
+            .disabled(isClearing)
         }
+        .alert("Clear All Browsing Data?", isPresented: $showClearAllConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Clear Everything", role: .destructive) {
+                clearAllDataNow()
+            }
+        } message: {
+            Text("This permanently deletes your browsing history, cookies, cached site data, and your saved tab session. This can't be undone.")
+        }
+    }
+
+    // BUG FIX: this previously used NSBatchDeleteRequest, which deletes
+    // rows directly at the SQLite level and bypasses Core Data's normal
+    // object tracking entirely. Once the table's fully empty, SQLite
+    // reuses row IDs for new inserts — so the first new HistoryItem
+    // created after a wipe can end up sharing an underlying row ID with
+    // one Core Data had already cached elsewhere (TabManager keeps its
+    // own separate background context for writing new visits and
+    // answering address-bar autocomplete). That stale cached object
+    // colliding with the new one is what caused every row to render as
+    // the same content. A plain fetch → delete → save keeps Core Data's
+    // own bookkeeping consistent, and the notification tells any other
+    // context to drop its cached objects too.
+    private func clearAllDataNow() {
+        isClearing = true
+
+        let historyFetch = NSFetchRequest<HistoryItem>(entityName: "HistoryItem")
+        do {
+            let items = try viewContext.fetch(historyFetch)
+            for item in items {
+                viewContext.delete(item)
+            }
+            try viewContext.save()
+        } catch {
+            print("Failed to clear history: \(error)")
+        }
+
+        NotificationCenter.default.post(name: .shromeDidClearAllHistory, object: nil)
+
+        let dataTypes = WKWebsiteDataStore.allWebsiteDataTypes()
+        WKWebsiteDataStore.default().removeData(ofTypes: dataTypes, modifiedSince: .distantPast) {
+            DispatchQueue.main.async {
+                isClearing = false
+            }
+        }
+
+        UserDefaults.standard.removeObject(forKey: "savedTabs")
+        UserDefaults.standard.removeObject(forKey: "activeTabId")
     }
 }

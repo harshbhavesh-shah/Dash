@@ -56,9 +56,27 @@ class TabManager: ObservableObject {
         return ctx
     }()
     private var saveDebounceTask: Task<Void, Never>?
+    private var clearHistoryObserver: NSObjectProtocol?
 
     init() {
         loadSessionOrCreateDefault()
+
+        // See GravityPreferencesView.clearAllDataNow(): after a full wipe,
+        // this context needs to drop any cached HistoryItem objects it
+        // still holds so it doesn't collide with new rows that reuse the
+        // same underlying SQLite row IDs.
+        clearHistoryObserver = NotificationCenter.default.addObserver(
+            forName: .shromeDidClearAllHistory, object: nil, queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            self.backgroundContext.perform {
+                self.backgroundContext.reset()
+            }
+        }
+    }
+
+    deinit {
+        if let clearHistoryObserver { NotificationCenter.default.removeObserver(clearHistoryObserver) }
     }
 
     // MARK: - Startup / Session Restore
@@ -236,15 +254,19 @@ class TabManager: ObservableObject {
 
         guard let url = URL(string: formattedString) else { return }
 
+        let previousUrl = tabs[index].url
+
         tabs[index].url = url
         tabs[index].urlString = formattedString
         tabs[index].title = url.host ?? formattedString
 
         if !tabs[index].isPrivate {
             saveSession()
-            // BUG FIX: "Save browsing history" toggle in Settings previously
-            // did nothing — every visit was logged to Core Data regardless.
-            if historyLoggingEnabled {
+            // BUG FIX: this used to log a history entry on every call,
+            // including redundant resubmissions of the same URL (e.g. the
+            // address bar's "reload" button re-running this whole method).
+            // Only log when the URL actually changed.
+            if historyLoggingEnabled && previousUrl != url {
                 logVisitToCoreData(url: url, title: tabs[index].title)
             }
         }
@@ -335,6 +357,17 @@ class TabManager: ObservableObject {
         let ctx = backgroundContext
         ctx.perform {
             let historyItem = HistoryItem(context: ctx)
+            // BUG FIX: this is the actual root cause of every history row
+            // rendering as identical content. HistoryItem has its own
+            // explicit `id: UUID?` attribute (separate from Core Data's
+            // internal object identity), and it's what Xcode's generated
+            // class uses to satisfy `Identifiable` for `@FetchRequest` /
+            // `ForEach` in HistoryView. This was never being set, so every
+            // row had `id == nil` — SwiftUI saw every row as sharing the
+            // exact same identity and rendered the same content for all of
+            // them, even though each one really was a distinct, correctly
+            // inserted row in the database.
+            historyItem.id = UUID()
             historyItem.timestamp = Date()
             historyItem.url = url.absoluteString
             historyItem.title = title

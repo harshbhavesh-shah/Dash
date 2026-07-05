@@ -84,7 +84,12 @@ struct FloatingAddressBar: View {
                 .transition(.scale.combined(with: .opacity))
             }
 
-            Button(action: onSubmit) {
+            // BUG FIX: this was previously wired to `onSubmit`, which
+            // re-runs the full "parse as URL or search query" pipeline on
+            // whatever's in the address bar — it never actually reloaded
+            // the page, and (before the history fix above) silently logged
+            // a duplicate history entry every time it was pressed.
+            Button(action: { tabManager.reloadActiveTab() }) {
                 Image(systemName: "arrow.clockwise")
                     .font(.system(size: 13, weight: .black))
                     .foregroundColor(Color(NSColor.labelColor).opacity(0.6))
@@ -113,6 +118,12 @@ struct FloatingAddressBar: View {
         .animation(.shromePop, value: isCurrentPageFavorited)
         .onAppear {
             cachedFavorites = decodeFavorites(from: customFavoritesJSON)
+        }
+        .onDisappear {
+            // BUG FIX: this Task wasn't tied to the view's lifecycle, so it
+            // could keep running (and still write to state) even after this
+            // address bar instance went away — e.g. during a fast tab switch.
+            debounceTask?.cancel()
         }
         .onChange(of: customFavoritesJSON) { _, newValue in
             cachedFavorites = decodeFavorites(from: newValue)

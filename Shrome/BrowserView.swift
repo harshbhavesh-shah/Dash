@@ -48,6 +48,11 @@ struct BrowserView: View {
                     }
                 }
                 .environmentObject(tabManager)
+                // BUG FIX: same reasoning as FloatingAddressBar — without a
+                // stable per-tab identity, this view (and its in-flight
+                // autocomplete task / typed text) could persist across a
+                // fast tab switch instead of resetting.
+                .id(tabManager.activeTabId)
                 .zIndex(2)
             }
         }
