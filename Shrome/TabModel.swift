@@ -58,7 +58,66 @@ class TabManager: ObservableObject {
     private var saveDebounceTask: Task<Void, Never>?
 
     init() {
-        createNewTab()
+        loadSessionOrCreateDefault()
+    }
+
+    // MARK: - Startup / Session Restore
+    //
+    // BUG FIX: `_commitSessionToDisk()` was faithfully writing `savedTabs` /
+    // `activeTabId` to UserDefaults on every change, but nothing ever read
+    // them back — init() unconditionally called createNewTab(), so
+    // "Continue where I left off" (the default StartupBehavior) silently
+    // did nothing and every launch started on a blank tab. This wires up
+    // all three StartupBehavior cases from GravityPreferencesView.
+
+    private func loadSessionOrCreateDefault() {
+        let defaults = UserDefaults.standard
+        let behavior = StartupBehavior(rawValue: defaults.string(forKey: "startupBehavior") ?? "")
+            ?? .leftOff
+
+        switch behavior {
+        case .newTab:
+            let homepage = defaults.string(forKey: "homepage") ?? ""
+            createNewTab(urlString: homepage.isEmpty ? "about:blank" : homepage)
+
+        case .firstGroupTab:
+            if restoreSavedTabs(), let firstGroup = groups.first,
+               let tab = tabs.first(where: { $0.groupId == firstGroup.id }) {
+                activeTabId = tab.id
+            } else if let firstGroup = groups.first {
+                createNewTab(targetGroupId: firstGroup.id)
+            } else {
+                createNewTab()
+            }
+
+        case .leftOff:
+            if !restoreSavedTabs() {
+                createNewTab()
+            }
+        }
+    }
+
+    /// Attempts to restore tabs saved by `_commitSessionToDisk()`.
+    /// Returns false (and leaves `tabs` untouched) if there was nothing
+    /// valid to restore, so callers can fall back to a fresh tab.
+    @discardableResult
+    private func restoreSavedTabs() -> Bool {
+        let defaults = UserDefaults.standard
+        guard let data = defaults.data(forKey: "savedTabs"),
+              let decoded = try? JSONDecoder().decode([Tab].self, from: data),
+              !decoded.isEmpty
+        else { return false }
+
+        tabs = decoded
+
+        if let activeData = defaults.data(forKey: "activeTabId"),
+           let decodedActiveId = try? JSONDecoder().decode(UUID.self, from: activeData),
+           decoded.contains(where: { $0.id == decodedActiveId }) {
+            activeTabId = decodedActiveId
+        } else {
+            activeTabId = decoded[0].id
+        }
+        return true
     }
 
     var activeTab: Tab {
@@ -183,7 +242,11 @@ class TabManager: ObservableObject {
 
         if !tabs[index].isPrivate {
             saveSession()
-            logVisitToCoreData(url: url, title: tabs[index].title)
+            // BUG FIX: "Save browsing history" toggle in Settings previously
+            // did nothing — every visit was logged to Core Data regardless.
+            if historyLoggingEnabled {
+                logVisitToCoreData(url: url, title: tabs[index].title)
+            }
         }
     }
 
@@ -262,6 +325,12 @@ class TabManager: ObservableObject {
             UserDefaults.standard.set(activeEncoded, forKey: "activeTabId")
         }
     }
+    private var historyLoggingEnabled: Bool {
+        let defaults = UserDefaults.standard
+        if defaults.object(forKey: "saveHistory") == nil { return true }
+        return defaults.bool(forKey: "saveHistory")
+    }
+
     private func logVisitToCoreData(url: URL, title: String) {
         let ctx = backgroundContext
         ctx.perform {

@@ -16,6 +16,7 @@ struct FloatingAddressBar: View {
     @AppStorage("accentColorGreen") private var g: Double = 0.55
     @AppStorage("accentColorBlue") private var b: Double = 0.72
     @AppStorage("customFavoritesJSON") private var customFavoritesJSON: String = ""
+    @AppStorage("searchSuggestions") private var searchSuggestions: Bool = true
     @State private var cachedFavorites: [FavItem] = []
     @State private var topSuggestion: String? = nil
     @State private var debounceTask: Task<Void, Never>? = nil
@@ -118,7 +119,9 @@ struct FloatingAddressBar: View {
         }
         .onChange(of: urlString) { _, newValue in
             debounceTask?.cancel()
-            guard !newValue.isEmpty else {
+            // BUG FIX: "Show search suggestions" toggle in Settings previously
+            // did nothing — suggestions were always fetched and shown.
+            guard searchSuggestions, !newValue.isEmpty else {
                 topSuggestion = nil
                 return
             }

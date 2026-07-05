@@ -17,7 +17,19 @@ class WebViewPool {
     private let maxPoolSize = 3
     private var pendingRuleListTargets = NSHashTable<WKWebView>.weakObjects()
     private var ruleListCancellable: AnyCancellable?
-    
+    private var settingsObserver: NSObjectProtocol?
+
+    // BUG FIX: "Block trackers" in Settings previously did nothing — the ad
+    // rule list and YouTube ad-skip script were applied unconditionally to
+    // every WebView. This reads the live setting (defaulting to true, same
+    // as GravityPreferences) and keeps every known WebView — pooled or
+    // already assigned to a tab — in sync with it.
+    private var blockTrackersEnabled: Bool {
+        let defaults = UserDefaults.standard
+        if defaults.object(forKey: "blockTrackers") == nil { return true }
+        return defaults.bool(forKey: "blockTrackers")
+    }
+
     private init() {
         ruleListCancellable = AdBlocker.shared.$ruleList
             .compactMap { $0 }
@@ -26,14 +38,58 @@ class WebViewPool {
             .sink { [weak self] ruleList in
                 self?.backfillRuleList(ruleList)
             }
+
+        settingsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.syncTrackerBlockingAcrossAllWebViews()
+        }
     }
+
+    deinit {
+        if let settingsObserver { NotificationCenter.default.removeObserver(settingsObserver) }
+    }
+
     private func backfillRuleList(_ ruleList: WKContentRuleList) {
+        guard blockTrackersEnabled else {
+            pendingRuleListTargets.removeAllObjects()
+            return
+        }
         let targets = pendingRuleListTargets.allObjects
         for webView in targets {
             webView.configuration.userContentController.add(ruleList)
         }
         pendingRuleListTargets.removeAllObjects()
         print("🛡️ Deflector Shields backfilled onto \(targets.count) pre-existing WebView(s).")
+    }
+
+    /// Re-applies (or strips) tracker blocking on every WebView we know
+    /// about — pooled and currently assigned to a tab — whenever the
+    /// "Block trackers" preference changes.
+    ///
+    /// Note: the content-rule-list half (network + CSS blocking) applies
+    /// immediately, including to future requests on already-open tabs. The
+    /// YouTube ad-skip script is injected at document-start, so a
+    /// currently-loaded page needs a reload/new navigation before a change
+    /// takes effect there.
+    private func syncTrackerBlockingAcrossAllWebViews() {
+        let enabled = blockTrackersEnabled
+        let allWebViews = standardPool + privatePool + Array(tabWebViews.values)
+
+        for webView in allWebViews {
+            let controller = webView.configuration.userContentController
+            controller.removeAllContentRuleLists()
+            controller.removeAllUserScripts()
+
+            guard enabled else { continue }
+
+            controller.addUserScript(AdBlocker.shared.getYouTubeSniper())
+            if let ruleList = AdBlocker.shared.ruleList {
+                controller.add(ruleList)
+            } else {
+                pendingRuleListTargets.add(webView)
+            }
+        }
     }
     
     func warmUp() {
@@ -106,16 +162,22 @@ class WebViewPool {
         }
         
         config.preferences.isElementFullscreenEnabled = true
-        config.userContentController.addUserScript(AdBlocker.shared.getYouTubeSniper())
+
+        if blockTrackersEnabled {
+            config.userContentController.addUserScript(AdBlocker.shared.getYouTubeSniper())
+        }
         
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.allowsBackForwardNavigationGestures = true
         webView.allowsMagnification = true
         webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15"
-        if let ruleList = AdBlocker.shared.ruleList {
-            webView.configuration.userContentController.add(ruleList)
-        } else {
-            pendingRuleListTargets.add(webView)
+
+        if blockTrackersEnabled {
+            if let ruleList = AdBlocker.shared.ruleList {
+                webView.configuration.userContentController.add(ruleList)
+            } else {
+                pendingRuleListTargets.add(webView)
+            }
         }
         
         return webView

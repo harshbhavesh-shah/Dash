@@ -16,9 +16,9 @@ enum StartupBehavior: String, CaseIterable {
 }
 
 enum AppearanceMode: String, CaseIterable {
-    case light     = "Light"
-    case dark      = "Dark"
-    case automatic = "Automatic (Sunset)"
+    case light  = "Light"
+    case dark   = "Dark"
+    case system = "System"
 }
 
 // MARK: - Preferences Data Model
@@ -114,13 +114,16 @@ private struct PrefsTitlebarHider: NSViewRepresentable {
 struct GravityPreferencesView: View {
     @StateObject private var prefs = GravityPreferences()
     @State private var selectedSection: PrefsSection = .general
-    @ObservedObject private var sunAppearance = SunAppearanceManager.shared
 
-    private var isDarkActive: Bool {
+    // BUG FIX: previously derived from SunAppearanceManager's sunset/sunrise
+    // calculation. "System" now just passes `nil` to .preferredColorScheme,
+    // which tells SwiftUI to defer to macOS's own appearance setting instead
+    // of us tracking it ourselves.
+    private var colorSchemeOverride: ColorScheme? {
         switch prefs.appearanceMode {
-        case .light:     return false
-        case .dark:      return true
-        case .automatic: return sunAppearance.isNightTime
+        case .light:  return .light
+        case .dark:   return .dark
+        case .system: return nil
         }
     }
 
@@ -176,12 +179,7 @@ struct GravityPreferencesView: View {
             .background(Color(NSColor.windowBackgroundColor))
         }
         .frame(width: 680, height: 480)
-        .preferredColorScheme(isDarkActive ? .dark : .light)
-        .onAppear {
-            if prefs.appearanceMode == .automatic {
-                SunAppearanceManager.shared.activate()
-            }
-        }
+        .preferredColorScheme(colorSchemeOverride)
     }
 }
 
@@ -327,17 +325,13 @@ struct GeneralSection: View {
 // MARK: - Appearance Section
 struct AppearanceSection: View {
     @ObservedObject var prefs: GravityPreferences
-    @ObservedObject private var sunAppearance = SunAppearanceManager.shared
 
     private let themeColumns = [
         GridItem(.adaptive(minimum: 65, maximum: 80), spacing: 12)
     ]
 
     private var appearanceSublabel: String {
-        if prefs.appearanceMode == .automatic && sunAppearance.locationUnavailable {
-            return "Location access is needed for sunset-based switching — enable it in System Settings > Privacy & Security > Location Services."
-        }
-        return "Choose how Shrome looks, or let it follow sunrise and sunset automatically"
+        "Choose how Shrome looks, or let it match your Mac's system setting"
     }
 
     var body: some View {
@@ -399,11 +393,6 @@ struct AppearanceSection: View {
                 .pickerStyle(.menu)
                 .frame(width: 200)
                 .labelsHidden()
-                .onChange(of: prefs.appearanceMode) { _, newMode in
-                    if newMode == .automatic {
-                        SunAppearanceManager.shared.activate()
-                    }
-                }
             }
 
             PrefsRow(label: "Ghost Mode", sublabel: "Auto-hide the sidebar when not hovered", isLast: true) {

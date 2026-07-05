@@ -121,6 +121,7 @@ struct GravityLandingView: View {
     @AppStorage("accentColorBlue") private var b: Double = 0.72
 
     @AppStorage(BackgroundImageStore.appStorageKey) private var landingBackgroundImagePath: String = ""
+    @AppStorage("searchSuggestions") private var searchSuggestions: Bool = true
     @State private var cachedBackgroundImage: NSImage? = nil
 
     @State private var isGlowPulsing = false
@@ -352,7 +353,9 @@ struct GravityLandingView: View {
         }
         .onChange(of: urlString) { _, newValue in
             debounceTask?.cancel()
-            guard !newValue.isEmpty else {
+            // BUG FIX: "Show search suggestions" toggle in Settings previously
+            // did nothing — suggestions were always fetched and shown.
+            guard searchSuggestions, !newValue.isEmpty else {
                 topSuggestion = nil
                 return
             }

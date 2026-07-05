@@ -22,7 +22,6 @@ struct ContentView: View {
     @AppStorage("appearanceMode") private var appearanceMode: AppearanceMode = .light
     @AppStorage("autoHideSidebar") private var autoHideSidebar: Bool = false
     @AppStorage("searchEngine") private var searchEngine: String = "Google"
-    @ObservedObject private var sunAppearance = SunAppearanceManager.shared
     @AppStorage("userPreferredName") private var userPreferredName: String = ""
     @AppStorage("hasCompletedNameOnboarding") private var hasCompletedNameOnboarding: Bool = false
 
@@ -43,11 +42,15 @@ struct ContentView: View {
         tabManager.activeTab.url.absoluteString == "about:blank"
     }
 
-    private var isDarkModeActive: Bool {
+    // BUG FIX: previously derived from SunAppearanceManager's sunset/sunrise
+    // calculation. "System" now just passes `nil` to .preferredColorScheme,
+    // which tells SwiftUI to defer to macOS's own appearance setting instead
+    // of us tracking it ourselves.
+    private var colorSchemeOverride: ColorScheme? {
         switch appearanceMode {
-        case .light:     return false
-        case .dark:      return true
-        case .automatic: return sunAppearance.isNightTime
+        case .light:  return .light
+        case .dark:   return .dark
+        case .system: return nil
         }
     }
 
@@ -237,10 +240,6 @@ struct ContentView: View {
                     : tabManager.activeTab.urlString
             }
 
-            if appearanceMode == .automatic {
-                SunAppearanceManager.shared.activate()
-            }
-
             if isPrivateWindow {
                 if tabManager.tabs.isEmpty {
                     tabManager.createNewTab(isPrivate: true)
@@ -273,7 +272,7 @@ struct ContentView: View {
             }
         }
         .animation(.shromeBouncy, value: isLandingPage)
-        .preferredColorScheme((isDarkModeActive || tabManager.activeTab.isPrivate) ? .dark : .light)
+        .preferredColorScheme(tabManager.activeTab.isPrivate ? .dark : colorSchemeOverride)
         .sheet(isPresented: $showHistoryPanel) {
             HistoryView(tabManager: tabManager) {
                 showHistoryPanel = false
