@@ -122,9 +122,17 @@ struct InlineCompleteTextField: NSViewRepresentable {
             if field.stringValue != parent.text {
                 field.stringValue = parent.text
             }
-            DispatchQueue.main.async {
-                field.currentEditor()?.selectAll(nil)
-            }
+            // BUG FIX: this selectAll used to be deferred via
+            // DispatchQueue.main.async, which opened a race window between
+            // "editing began" and "select all actually ran." If the user
+            // typed fast enough that a keystroke landed in that window, the
+            // deferred selectAll would then select whatever they'd just
+            // typed, and their very next keystroke would replace that
+            // selection instead of appending to it — silently eating the
+            // start of what they typed, worse the faster they typed. The
+            // field editor is already installed by the time this delegate
+            // method fires, so selecting synchronously closes the race.
+            field.currentEditor()?.selectAll(nil)
         }
 
         func controlTextDidEndEditing(_ obj: Notification) {
