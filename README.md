@@ -73,7 +73,7 @@ Shrome/
 
 ## Changelog
 
-See [Releases](../../releases) for version history. Latest: **[1.1.0](../../releases/tag/1.1.0)**.
+See [Releases](../../releases) for version history. Latest: **[1.1.0](../../releases/tag/v1.1.0)**.
 
 ## License
 
