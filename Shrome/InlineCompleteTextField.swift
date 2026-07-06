@@ -51,6 +51,15 @@ struct InlineCompleteTextField: NSViewRepresentable {
     func updateNSView(_ nsView: GhostTextField, context: Context) {
         context.coordinator.parent = self
 
+        // BUG FIX: textColor was previously only ever set once, in
+        // makeNSView. Even though NSColor.labelColor is itself a dynamic
+        // color, the field's color never got refreshed after creation, so
+        // changing the app's appearance mode had no visible effect on
+        // already-created address bars.
+        if nsView.textColor != textColor {
+            nsView.textColor = textColor
+        }
+
         let isActive = nsView.currentEditor() != nil
         // When not focused, show the display alias (e.g. just the host) if
         // one was provided. When focused, always show the real full text so

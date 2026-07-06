@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 struct FloatingAddressBar: View {
     @Binding var urlString: String
@@ -50,13 +51,13 @@ struct FloatingAddressBar: View {
         HStack(spacing: 15) {
             Image(systemName: isPrivate ? "shield.fill" : "magnifyingglass")
                 .font(.system(size: 13, weight: .black))
-                .foregroundColor(isPrivate ? .shromePrivate : Color(NSColor.labelColor).opacity(0.65))
+                .foregroundColor(isPrivate ? .shromePrivate : Color.primary.opacity(0.65))
 
             InlineCompleteTextField(
                 text: $urlString,
                 suggestion: topSuggestion,
                 placeholder: "Search or enter website",
-                font: .systemFont(ofSize: 14, weight: .medium), textColor: NSColor.labelColor, displayOverride: urlDisplayHost,
+                font: .systemFont(ofSize: 14, weight: .medium), textColor: .labelColor, displayOverride: urlDisplayHost,
                 onCommit: {
                     topSuggestion = nil
                     onSubmit()
@@ -78,7 +79,7 @@ struct FloatingAddressBar: View {
                 Button(action: toggleFavoriteStatus) {
                     Image(systemName: isCurrentPageFavorited ? "heart.fill" : "heart")
                         .font(.system(size: 13, weight: .black))
-                        .foregroundColor(isCurrentPageFavorited ? .red : Color(NSColor.labelColor).opacity(0.6))
+                        .foregroundColor(isCurrentPageFavorited ? .red : Color.primary.opacity(0.6))
                 }
                 .buttonStyle(.bouncy)
                 .transition(.scale.combined(with: .opacity))
@@ -92,24 +93,27 @@ struct FloatingAddressBar: View {
             Button(action: { tabManager.reloadActiveTab() }) {
                 Image(systemName: "arrow.clockwise")
                     .font(.system(size: 13, weight: .black))
-                    .foregroundColor(Color(NSColor.labelColor).opacity(0.6))
+                    .foregroundColor(Color.primary.opacity(0.6))
             }
             .buttonStyle(.bouncy)
         }
         .padding(.horizontal, 25)
         .padding(.vertical, 16)
         .frame(width: 550)
-        .background {
-            Color.clear
-                .glassEffect(
-                    .regular.tint(
-                        isPrivate
-                            ? Color.shromePrivate.opacity(0.12)
-                            : Color.primary.opacity(0.04)
-                    ),
-                    in: Capsule()
-                )
-        }
+        // BUG FIX: .glassEffect() was previously applied to an isolated
+        // Color.clear view sitting in .background — a separate layer behind
+        // the actual content, not integrated with it. Real vibrancy (the
+        // thing that makes Safari's chrome auto-adjust to whatever's on the
+        // page behind it) only kicks in when content is composited *inside*
+        // the glass material itself. Applying .glassEffect directly to this
+        // container, with content using vibrancy-aware colors (.primary,
+        // .secondary, and AppKit's own .labelColor) instead of fixed
+        // values, lets the system do that contrast blending natively —
+        // no manual color-scheme branching or opaque scrim required.
+        .glassEffect(
+            isPrivate ? .regular.tint(Color.shromePrivate.opacity(0.15)) : .regular,
+            in: Capsule()
+        )
         .overlay {
             Capsule()
                 .strokeBorder(Color.primary.opacity(0.09), lineWidth: 1)
