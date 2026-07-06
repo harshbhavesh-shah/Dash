@@ -188,14 +188,7 @@ struct GravityLandingView: View {
         return "Where are we sailing today?"
     }
 
-    @AppStorage("customFavoritesJSON") private var customFavoritesJSON: String = """
-    [
-        {"name": "Apple", "url": "apple.com", "icon": "apple.logo"},
-        {"name": "GitHub", "url": "github.com", "icon": "terminal.fill"},
-        {"name": "YouTube", "url": "youtube.com", "icon": "play.rectangle.fill"},
-        {"name": "Dribbble", "url": "dribbble.com", "icon": "paintpalette.fill"}
-    ]
-    """
+    @AppStorage("customFavoritesJSON") private var customFavoritesJSON: String = ShromeDefaults.favoritesJSON
 
     private var favorites: [(name: String, url: String, icon: String)] {
         struct FavItem: Codable { let name: String; let url: String; let icon: String }

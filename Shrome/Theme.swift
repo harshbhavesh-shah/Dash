@@ -12,6 +12,25 @@ extension Color {
     static let shromePrivate = Color(red: 0.64, green: 0.42, blue: 0.96)
 }
 
+// BUG FIX: FloatingAddressBar and GravityLandingView each declared their own
+// @AppStorage("customFavoritesJSON") default value — FloatingAddressBar used
+// an empty string, GravityLandingView used the real starter set below. For a
+// brand new user, whichever view wrote to the shared key *first* (typically
+// FloatingAddressBar, via the very first favorite-toggle tap) would silently
+// overwrite the starter favorites with its own, different default before
+// they'd ever actually been persisted. Both views now reference this single
+// constant instead of declaring their own.
+enum ShromeDefaults {
+    static let favoritesJSON: String = """
+    [
+        {"name": "Apple", "url": "apple.com", "icon": "apple.logo"},
+        {"name": "GitHub", "url": "github.com", "icon": "terminal.fill"},
+        {"name": "YouTube", "url": "youtube.com", "icon": "play.rectangle.fill"},
+        {"name": "Dribbble", "url": "dribbble.com", "icon": "paintpalette.fill"}
+    ]
+    """
+}
+
 struct PolishedGlass: ViewModifier {
     @AppStorage("accentColorRed") private var r: Double = 0.91
     @AppStorage("accentColorGreen") private var g: Double = 0.80

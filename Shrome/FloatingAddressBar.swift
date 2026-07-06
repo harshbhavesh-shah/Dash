@@ -16,7 +16,7 @@ struct FloatingAddressBar: View {
     @AppStorage("accentColorRed") private var r: Double = 0.96
     @AppStorage("accentColorGreen") private var g: Double = 0.55
     @AppStorage("accentColorBlue") private var b: Double = 0.72
-    @AppStorage("customFavoritesJSON") private var customFavoritesJSON: String = ""
+    @AppStorage("customFavoritesJSON") private var customFavoritesJSON: String = ShromeDefaults.favoritesJSON
     @AppStorage("searchSuggestions") private var searchSuggestions: Bool = true
     @State private var cachedFavorites: [FavItem] = []
     @State private var topSuggestion: String? = nil
