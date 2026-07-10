@@ -14,8 +14,10 @@ struct ContentView: View {
     var initialURL: URL? = nil
 
     @StateObject private var tabManager = TabManager()
+    @ObservedObject private var downloadManager = DownloadManager.shared
     @State private var isSidebarVisible = false
     @State private var showHistoryPanel = false
+    @State private var showDownloadsPanel = false
 
     @Namespace private var addressBarNamespace
 
@@ -42,10 +44,7 @@ struct ContentView: View {
         tabManager.activeTab.url.absoluteString == "about:blank"
     }
 
-    // BUG FIX: previously derived from SunAppearanceManager's sunset/sunrise
-    // calculation. "System" now just passes `nil` to .preferredColorScheme,
-    // which tells SwiftUI to defer to macOS's own appearance setting instead
-    // of us tracking it ourselves.
+
     private var colorSchemeOverride: ColorScheme? {
         switch appearanceMode {
         case .light:  return .light
@@ -101,12 +100,6 @@ struct ContentView: View {
     }
 
     private func executeAddressBarSubmit() {
-        // BUG FIX: this used to resync via `tabManager.activeTab` inside the
-        // async block below, read at *execution* time. If the user switches
-        // tabs before that block runs (easy to do typing fast across tabs),
-        // it clobbers whatever they're now typing in the new tab with the
-        // tab that was actually just submitted. Capture which tab this
-        // submission was for, and only resync if it's still the active one.
         let submittedTabId = tabManager.activeTabId
         tabManager.updateActiveUrl(urlString: displayURLString, searchEngine: searchEngine)
         DispatchQueue.main.async {
@@ -178,6 +171,8 @@ struct ContentView: View {
             }
 
             bottomBarLayer
+
+            downloadShelfLayer
 
             if isPrivateWindow && requirePrivateWindowAuth && !isPrivateWindowUnlocked {
                 ZStack {
@@ -288,6 +283,12 @@ struct ContentView: View {
             }
             .environment(\.managedObjectContext, viewContext)
         }
+        .sheet(isPresented: $showDownloadsPanel) {
+            DownloadsView {
+                showDownloadsPanel = false
+            }
+            .environment(\.managedObjectContext, viewContext)
+        }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionNewTab"))) { _ in
             withAnimation(.shromeBouncy) {
                 tabManager.createNewTab(isPrivate: isPrivateWindow)
@@ -316,6 +317,9 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionShowHistory"))) { _ in
             showHistoryPanel = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionShowDownloads"))) { _ in
+            showDownloadsPanel = true
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionNextTab"))) { _ in
             withAnimation(.shromeSnappy) {
@@ -358,12 +362,6 @@ struct ContentView: View {
                     tabManager: tabManager,
                     onSubmit: executeAddressBarSubmit
                 )
-                // BUG FIX: this view previously persisted across tab
-                // switches, so its in-flight autocomplete task, ghost-text
-                // suffix, and editor state could leak from one tab into the
-                // next if you switched fast enough. Keying it to the active
-                // tab forces SwiftUI to tear down and recreate it —
-                // Coordinator and all — every time the active tab changes.
                 .id(tabManager.activeTabId)
                 .matchedGeometryEffect(id: "sharedAddressBarKey", in: addressBarNamespace)
                 .padding(.bottom, 40)
@@ -371,6 +369,28 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity)
             .zIndex(5)
+        }
+    }
+
+    @ViewBuilder
+    private var downloadShelfLayer: some View {
+        if downloadManager.isShelfVisible {
+            VStack {
+                HStack {
+                    Spacer()
+                    DownloadShelfView {
+                        withAnimation(.shromeSnappy) {
+                            showDownloadsPanel = true
+                        }
+                    }
+                    .padding(.top, 16)
+                    .padding(.trailing, 16)
+                }
+                Spacer()
+            }
+            .transition(.scale(scale: 0.85, anchor: .topTrailing).combined(with: .opacity))
+            .zIndex(50)
+            .animation(.shromeBouncy, value: downloadManager.isShelfVisible)
         }
     }
 }

@@ -91,6 +91,24 @@ struct WebView: NSViewRepresentable {
                 }
             }
         }
+
+        func webView(_ webView: WKWebView,
+                     decidePolicyFor navigationResponse: WKNavigationResponse,
+                     decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+            if navigationResponse.canShowMIMEType {
+                decisionHandler(.allow)
+            } else {
+                decisionHandler(.download)
+            }
+        }
+
+        func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
+            DownloadManager.shared.track(download)
+        }
+
+        func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
+            DownloadManager.shared.track(download)
+        }
         
         func webView(_ webView: WKWebView,
                      createWebViewWith configuration: WKWebViewConfiguration,

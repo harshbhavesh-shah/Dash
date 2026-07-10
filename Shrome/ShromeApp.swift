@@ -34,8 +34,7 @@ struct ShromeApp: App {
             queue: .main
         ) { notification in
             guard let url = notification.object as? URL else { return }
-            // Relay via URLWithNewWindow so the App body's environment
-            // (where openURL IS available) can handle it.
+
             NotificationCenter.default.post(
                 name: .openURLInNewWindow,
                 object: url
@@ -139,6 +138,12 @@ struct ShromeApp: App {
                 }
                 .keyboardShortcut("y", modifiers: .command)
             }
+            CommandMenu("Downloads") {
+                Button("Show Downloads...") {
+                    NotificationCenter.default.post(name: Notification.Name("MenuActionShowDownloads"), object: nil)
+                }
+                .keyboardShortcut("l", modifiers: [.command, .option])
+            }
         }
 
         WindowGroup(id: "PrivateShromeWindow") {
@@ -174,8 +179,7 @@ class TabCycleKeyMonitor {
                     name: Notification.Name("MenuActionNextTab"), object: nil
                 )
             }
-            // Returning nil swallows the event so it doesn't also trigger
-            // system focus navigation.
+
             return nil
         }
     }
