@@ -143,18 +143,37 @@ struct WebView: NSViewRepresentable {
 
 struct WindowHacker: NSViewRepresentable {
     var showNativeButtons: Bool
+    var windowAutosaveName: String = "ShromeMainWindow"
     var onResolveWindow: ((NSWindow) -> Void)? = nil
-    
+
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
-        DispatchQueue.main.async { updateWindow(view.window) }
+        DispatchQueue.main.async {
+            guard let window = view.window else { return }
+            applyInitialSizeIfNeeded(to: window)
+            updateWindow(window)
+        }
         return view
     }
     
     func updateNSView(_ nsView: NSView, context: Context) {
         DispatchQueue.main.async { updateWindow(nsView.window) }
     }
-    
+
+    private func applyInitialSizeIfNeeded(to window: NSWindow) {
+        let restoredFromSavedFrame = window.setFrameAutosaveName(windowAutosaveName)
+        guard !restoredFromSavedFrame else { return }
+
+        guard let screen = window.screen ?? NSScreen.main else { return }
+        let screenFrame = screen.visibleFrame
+        let targetSize = NSSize(width: screenFrame.width * 0.75, height: screenFrame.height * 0.75)
+        let origin = NSPoint(
+            x: screenFrame.origin.x + (screenFrame.width - targetSize.width) / 2,
+            y: screenFrame.origin.y + (screenFrame.height - targetSize.height) / 2
+        )
+        window.setFrame(NSRect(origin: origin, size: targetSize), display: true)
+    }
+
     private func updateWindow(_ window: NSWindow?) {
         guard let window = window else { return }
         window.titlebarAppearsTransparent = true

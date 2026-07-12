@@ -15,6 +15,7 @@ struct ContentView: View {
 
     @StateObject private var tabManager = TabManager()
     @ObservedObject private var downloadManager = DownloadManager.shared
+    @ObservedObject private var updateChecker = UpdateChecker.shared
     @State private var isSidebarVisible = false
     @State private var showHistoryPanel = false
     @State private var showDownloadsPanel = false
@@ -43,7 +44,6 @@ struct ContentView: View {
     private var isLandingPage: Bool {
         tabManager.activeTab.url.absoluteString == "about:blank"
     }
-
 
     private var colorSchemeOverride: ColorScheme? {
         switch appearanceMode {
@@ -174,6 +174,8 @@ struct ContentView: View {
 
             downloadShelfLayer
 
+            updateNotificationLayer
+
             if isPrivateWindow && requirePrivateWindowAuth && !isPrivateWindowUnlocked {
                 ZStack {
                     Color.clear
@@ -226,7 +228,10 @@ struct ContentView: View {
             }
         }
         .background(
-            WindowHacker(showNativeButtons: shouldUseNativeButtons) { window in
+            WindowHacker(
+                showNativeButtons: shouldUseNativeButtons,
+                windowAutosaveName: isPrivateWindow ? "ShromePrivateWindow" : "ShromeMainWindow"
+            ) { window in
                 if hostWindow !== window { hostWindow = window }
             }
             .frame(width: 0, height: 0)
@@ -391,6 +396,37 @@ struct ContentView: View {
             .transition(.scale(scale: 0.85, anchor: .topTrailing).combined(with: .opacity))
             .zIndex(50)
             .animation(.shromeBouncy, value: downloadManager.isShelfVisible)
+        }
+    }
+
+    @ViewBuilder
+    private var updateNotificationLayer: some View {
+        if !isPrivateWindow, let updateInfo = updateChecker.updateAvailable {
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    UpdateNotificationView(
+                        updateInfo: updateInfo,
+                        onViewRelease: {
+                            tabManager.createNewTab(urlString: updateInfo.releaseURL.absoluteString)
+                            withAnimation(.shromeSnappy) {
+                                updateChecker.dismiss()
+                            }
+                        },
+                        onDismiss: {
+                            withAnimation(.shromeSnappy) {
+                                updateChecker.dismiss()
+                            }
+                        }
+                    )
+                    .padding(.trailing, 16)
+                    .padding(.bottom, isLandingPage ? 40 : 100)
+                }
+            }
+            .transition(.scale(scale: 0.85, anchor: .bottomTrailing).combined(with: .opacity))
+            .zIndex(50)
+            .animation(.shromeBouncy, value: updateChecker.updateAvailable)
         }
     }
 }

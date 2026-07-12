@@ -27,6 +27,7 @@ struct ShromeApp: App {
 
     init() {
         WebViewPool.shared.warmUp()
+        UpdateChecker.shared.checkForUpdatesIfNeeded()
         TabCycleKeyMonitor.shared.start()
         NotificationCenter.default.addObserver(
             forName: .openNewWindowWithURL,
@@ -34,7 +35,8 @@ struct ShromeApp: App {
             queue: .main
         ) { notification in
             guard let url = notification.object as? URL else { return }
-
+            // Relay via URLWithNewWindow so the App body's environment
+            // (where openURL IS available) can handle it.
             NotificationCenter.default.post(
                 name: .openURLInNewWindow,
                 object: url
@@ -53,6 +55,11 @@ struct ShromeApp: App {
                 }
         }
         .commands {
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates...") {
+                    UpdateChecker.shared.checkForUpdatesManually()
+                }
+            }
             CommandGroup(replacing: .newItem) {
                 Button("New Tab") {
                     NotificationCenter.default.post(name: Notification.Name("MenuActionNewTab"), object: nil)
@@ -166,7 +173,6 @@ class TabCycleKeyMonitor {
     func start() {
         guard monitor == nil else { return }
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            // Tab key (keyCode 48) with Control held
             guard event.keyCode == 48,
                   event.modifierFlags.contains(.control) else { return event }
 
@@ -179,7 +185,6 @@ class TabCycleKeyMonitor {
                     name: Notification.Name("MenuActionNextTab"), object: nil
                 )
             }
-
             return nil
         }
     }
