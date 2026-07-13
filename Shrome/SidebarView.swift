@@ -180,7 +180,10 @@ struct TabRow: View {
 
             ZStack {
                 if isHovered {
-                    Button(action: onClose) {
+                    Button(action: {
+                        ShromeHaptics.confirmationTap()
+                        onClose()
+                    }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 14))
                             .foregroundColor(.primary.opacity(0.3))
