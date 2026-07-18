@@ -82,7 +82,7 @@ struct ContentView: View {
         hideTask?.cancel()
 
         if isHovering {
-            withAnimation(.shromeSnappy) {
+            withAnimation(.dashSnappy) {
                 isEdgeHovered = true
             }
         } else {
@@ -90,7 +90,7 @@ struct ContentView: View {
                 try? await Task.sleep(nanoseconds: 1_500_000_000)
                 if !Task.isCancelled {
                     await MainActor.run {
-                        withAnimation(.shromeSnappy) {
+                        withAnimation(.dashSnappy) {
                             isEdgeHovered = false
                         }
                     }
@@ -108,11 +108,11 @@ struct ContentView: View {
             displayURLString = tab.urlString
         }
 
-        withAnimation(.shromeBouncy) { }
+        withAnimation(.dashBouncy) { }
 
         if autoHideSidebar && !isSidebarVisible {
             hideTask?.cancel()
-            withAnimation(.shromeSnappy) {
+            withAnimation(.dashSnappy) {
                 isEdgeHovered = false
             }
         }
@@ -123,11 +123,11 @@ struct ContentView: View {
         var error: NSError?
 
         if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) {
-            let reason = "unlock your private Shrome session"
+            let reason = "unlock your private Dash session"
             context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, authError in
                 DispatchQueue.main.async {
                     if success {
-                        withAnimation(.shromeBouncy) {
+                        withAnimation(.dashBouncy) {
                             self.isPrivateWindowUnlocked = true
                         }
                     } else {
@@ -185,7 +185,7 @@ struct ContentView: View {
                     VStack(spacing: 16) {
                         Image(systemName: "lock.shield.fill")
                             .font(.system(size: 40))
-                            .foregroundColor(.shromePrivate)
+                            .foregroundColor(.dashPrivate)
 
                         Text("Private Session Locked")
                             .font(.system(size: 18, weight: .bold, design: .rounded))
@@ -201,7 +201,7 @@ struct ContentView: View {
                                 .padding(.horizontal, 6)
                         }
                         .buttonStyle(.borderedProminent)
-                        .tint(.shromePrivate)
+                        .tint(.dashPrivate)
                         .keyboardShortcut(.defaultAction)
 
                         if let errorMsg = biometricErrorMessage {
@@ -217,7 +217,7 @@ struct ContentView: View {
             }
             if !isPrivateWindow && !hasCompletedNameOnboarding {
                 NameOnboardingView { name in
-                    withAnimation(.shromeBouncy) {
+                    withAnimation(.dashBouncy) {
                         userPreferredName = name
                         hasCompletedNameOnboarding = true
                     }
@@ -280,7 +280,7 @@ struct ContentView: View {
                 displayURLString = newValue
             }
         }
-        .animation(.shromeBouncy, value: isLandingPage)
+        .animation(.dashBouncy, value: isLandingPage)
         .preferredColorScheme(tabManager.activeTab.isPrivate ? .dark : colorSchemeOverride)
         .sheet(isPresented: $showHistoryPanel) {
             HistoryView(tabManager: tabManager) {
@@ -295,13 +295,13 @@ struct ContentView: View {
             .environment(\.managedObjectContext, viewContext)
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionNewTab"))) { _ in
-            withAnimation(.shromeBouncy) {
+            withAnimation(.dashBouncy) {
                 tabManager.createNewTab(isPrivate: isPrivateWindow)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .openNewTabFromLink)) { note in
             guard let url = note.object as? URL else { return }
-            withAnimation(.shromeBouncy) {
+            withAnimation(.dashBouncy) {
                 tabManager.createNewTab(urlString: url.absoluteString, isPrivate: isPrivateWindow)
             }
         }
@@ -316,7 +316,7 @@ struct ContentView: View {
             tabManager.reloadActiveTab()
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionToggleSidebar"))) { _ in
-            withAnimation(.shromeSnappy) {
+            withAnimation(.dashSnappy) {
                 isSidebarVisible.toggle()
             }
         }
@@ -327,23 +327,23 @@ struct ContentView: View {
             showDownloadsPanel = true
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionNextTab"))) { _ in
-            withAnimation(.shromeSnappy) {
+            withAnimation(.dashSnappy) {
                 tabManager.selectNextTab()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionPreviousTab"))) { _ in
-            withAnimation(.shromeSnappy) {
+            withAnimation(.dashSnappy) {
                 tabManager.selectPreviousTab()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionSelectTab"))) { notification in
             guard let number = notification.object as? Int else { return }
-            withAnimation(.shromeSnappy) {
+            withAnimation(.dashSnappy) {
                 tabManager.selectTab(number: number)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionSelectLastTab"))) { _ in
-            withAnimation(.shromeSnappy) {
+            withAnimation(.dashSnappy) {
                 tabManager.selectLastTab()
             }
         }
@@ -384,7 +384,7 @@ struct ContentView: View {
                 HStack {
                     Spacer()
                     DownloadShelfView {
-                        withAnimation(.shromeSnappy) {
+                        withAnimation(.dashSnappy) {
                             showDownloadsPanel = true
                         }
                     }
@@ -395,7 +395,7 @@ struct ContentView: View {
             }
             .transition(.scale(scale: 0.85, anchor: .topTrailing).combined(with: .opacity))
             .zIndex(50)
-            .animation(.shromeBouncy, value: downloadManager.isShelfVisible)
+            .animation(.dashBouncy, value: downloadManager.isShelfVisible)
         }
     }
 
@@ -410,12 +410,12 @@ struct ContentView: View {
                         updateInfo: updateInfo,
                         onViewRelease: {
                             tabManager.createNewTab(urlString: updateInfo.releaseURL.absoluteString)
-                            withAnimation(.shromeSnappy) {
+                            withAnimation(.dashSnappy) {
                                 updateChecker.dismiss()
                             }
                         },
                         onDismiss: {
-                            withAnimation(.shromeSnappy) {
+                            withAnimation(.dashSnappy) {
                                 updateChecker.dismiss()
                             }
                         }
@@ -426,7 +426,7 @@ struct ContentView: View {
             }
             .transition(.scale(scale: 0.85, anchor: .bottomTrailing).combined(with: .opacity))
             .zIndex(50)
-            .animation(.shromeBouncy, value: updateChecker.updateAvailable)
+            .animation(.dashBouncy, value: updateChecker.updateAvailable)
         }
     }
 }

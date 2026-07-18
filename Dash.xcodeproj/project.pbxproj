@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D8E5A3492FE4521400934330 /* ShromeDataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = D8E5A3472FE4521400934330 /* ShromeDataModel.xcdatamodeld */; };
+		D8E5A3492FE4521400934330 /* DashDataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = D8E5A3472FE4521400934330 /* DashDataModel.xcdatamodeld */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -41,39 +41,39 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		D8404EC22F5AE1C600DA54D4 /* Shrome.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Shrome.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		D8404ED42F5AE1C800DA54D4 /* ShromeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ShromeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		D8404EDE2F5AE1C800DA54D4 /* ShromeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ShromeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		D8E5A3482FE4521400934330 /* ShromeDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = ShromeDataModel.xcdatamodel; sourceTree = "<group>"; };
+		D8404EC22F5AE1C600DA54D4 /* Dash.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Dash.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D8404ED42F5AE1C800DA54D4 /* DashTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DashTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D8404EDE2F5AE1C800DA54D4 /* DashUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DashUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D8E5A3482FE4521400934330 /* DashDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = DashDataModel.xcdatamodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		D85682572FF07C0900130AA5 /* Exceptions for "Shrome" folder in "Shrome" target */ = {
+		D85682572FF07C0900130AA5 /* Exceptions for "Dash" folder in "Dash" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = D8404EC12F5AE1C600DA54D4 /* Shrome */;
+			target = D8404EC12F5AE1C600DA54D4 /* Dash */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		D8404EC42F5AE1C600DA54D4 /* Shrome */ = {
+		D8404EC42F5AE1C600DA54D4 /* Dash */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				D85682572FF07C0900130AA5 /* Exceptions for "Shrome" folder in "Shrome" target */,
+				D85682572FF07C0900130AA5 /* Exceptions for "Dash" folder in "Dash" target */,
 			);
-			path = Shrome;
+			path = Dash;
 			sourceTree = "<group>";
 		};
-		D8404ED72F5AE1C800DA54D4 /* ShromeTests */ = {
+		D8404ED72F5AE1C800DA54D4 /* DashTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = ShromeTests;
+			path = DashTests;
 			sourceTree = "<group>";
 		};
-		D8404EE12F5AE1C800DA54D4 /* ShromeUITests */ = {
+		D8404EE12F5AE1C800DA54D4 /* DashUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = ShromeUITests;
+			path = DashUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -106,10 +106,10 @@
 		D8404EB92F5AE1C600DA54D4 = {
 			isa = PBXGroup;
 			children = (
-				D8E5A3472FE4521400934330 /* ShromeDataModel.xcdatamodeld */,
-				D8404EC42F5AE1C600DA54D4 /* Shrome */,
-				D8404ED72F5AE1C800DA54D4 /* ShromeTests */,
-				D8404EE12F5AE1C800DA54D4 /* ShromeUITests */,
+				D8E5A3472FE4521400934330 /* DashDataModel.xcdatamodeld */,
+				D8404EC42F5AE1C600DA54D4 /* Dash */,
+				D8404ED72F5AE1C800DA54D4 /* DashTests */,
+				D8404EE12F5AE1C800DA54D4 /* DashUITests */,
 				D8C1EABC2FE7AF68005974C7 /* Frameworks */,
 				D8404EC32F5AE1C600DA54D4 /* Products */,
 			);
@@ -118,9 +118,9 @@
 		D8404EC32F5AE1C600DA54D4 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				D8404EC22F5AE1C600DA54D4 /* Shrome.app */,
-				D8404ED42F5AE1C800DA54D4 /* ShromeTests.xctest */,
-				D8404EDE2F5AE1C800DA54D4 /* ShromeUITests.xctest */,
+				D8404EC22F5AE1C600DA54D4 /* Dash.app */,
+				D8404ED42F5AE1C800DA54D4 /* DashTests.xctest */,
+				D8404EDE2F5AE1C800DA54D4 /* DashUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -135,9 +135,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		D8404EC12F5AE1C600DA54D4 /* Shrome */ = {
+		D8404EC12F5AE1C600DA54D4 /* Dash */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = D8404EE82F5AE1C800DA54D4 /* Build configuration list for PBXNativeTarget "Shrome" */;
+			buildConfigurationList = D8404EE82F5AE1C800DA54D4 /* Build configuration list for PBXNativeTarget "Dash" */;
 			buildPhases = (
 				D8404EBE2F5AE1C600DA54D4 /* Sources */,
 				D8404EBF2F5AE1C600DA54D4 /* Frameworks */,
@@ -149,18 +149,18 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				D8404EC42F5AE1C600DA54D4 /* Shrome */,
+				D8404EC42F5AE1C600DA54D4 /* Dash */,
 			);
-			name = Shrome;
+			name = Dash;
 			packageProductDependencies = (
 			);
 			productName = Shrome;
-			productReference = D8404EC22F5AE1C600DA54D4 /* Shrome.app */;
+			productReference = D8404EC22F5AE1C600DA54D4 /* Dash.app */;
 			productType = "com.apple.product-type.application";
 		};
-		D8404ED32F5AE1C800DA54D4 /* ShromeTests */ = {
+		D8404ED32F5AE1C800DA54D4 /* DashTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = D8404EEB2F5AE1C800DA54D4 /* Build configuration list for PBXNativeTarget "ShromeTests" */;
+			buildConfigurationList = D8404EEB2F5AE1C800DA54D4 /* Build configuration list for PBXNativeTarget "DashTests" */;
 			buildPhases = (
 				D8404ED02F5AE1C800DA54D4 /* Sources */,
 				D8404ED12F5AE1C800DA54D4 /* Frameworks */,
@@ -172,18 +172,18 @@
 				D8404ED62F5AE1C800DA54D4 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				D8404ED72F5AE1C800DA54D4 /* ShromeTests */,
+				D8404ED72F5AE1C800DA54D4 /* DashTests */,
 			);
-			name = ShromeTests;
+			name = DashTests;
 			packageProductDependencies = (
 			);
 			productName = ShromeTests;
-			productReference = D8404ED42F5AE1C800DA54D4 /* ShromeTests.xctest */;
+			productReference = D8404ED42F5AE1C800DA54D4 /* DashTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		D8404EDD2F5AE1C800DA54D4 /* ShromeUITests */ = {
+		D8404EDD2F5AE1C800DA54D4 /* DashUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = D8404EEE2F5AE1C800DA54D4 /* Build configuration list for PBXNativeTarget "ShromeUITests" */;
+			buildConfigurationList = D8404EEE2F5AE1C800DA54D4 /* Build configuration list for PBXNativeTarget "DashUITests" */;
 			buildPhases = (
 				D8404EDA2F5AE1C800DA54D4 /* Sources */,
 				D8404EDB2F5AE1C800DA54D4 /* Frameworks */,
@@ -195,13 +195,13 @@
 				D8404EE02F5AE1C800DA54D4 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				D8404EE12F5AE1C800DA54D4 /* ShromeUITests */,
+				D8404EE12F5AE1C800DA54D4 /* DashUITests */,
 			);
-			name = ShromeUITests;
+			name = DashUITests;
 			packageProductDependencies = (
 			);
 			productName = ShromeUITests;
-			productReference = D8404EDE2F5AE1C800DA54D4 /* ShromeUITests.xctest */;
+			productReference = D8404EDE2F5AE1C800DA54D4 /* DashUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -227,7 +227,7 @@
 					};
 				};
 			};
-			buildConfigurationList = D8404EBD2F5AE1C600DA54D4 /* Build configuration list for PBXProject "Shrome" */;
+			buildConfigurationList = D8404EBD2F5AE1C600DA54D4 /* Build configuration list for PBXProject "Dash" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -243,9 +243,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				D8404EC12F5AE1C600DA54D4 /* Shrome */,
-				D8404ED32F5AE1C800DA54D4 /* ShromeTests */,
-				D8404EDD2F5AE1C800DA54D4 /* ShromeUITests */,
+				D8404EC12F5AE1C600DA54D4 /* Dash */,
+				D8404ED32F5AE1C800DA54D4 /* DashTests */,
+				D8404EDD2F5AE1C800DA54D4 /* DashUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -279,7 +279,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D8E5A3492FE4521400934330 /* ShromeDataModel.xcdatamodeld in Sources */,
+				D8E5A3492FE4521400934330 /* DashDataModel.xcdatamodeld in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -302,12 +302,12 @@
 /* Begin PBXTargetDependency section */
 		D8404ED62F5AE1C800DA54D4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = D8404EC12F5AE1C600DA54D4 /* Shrome */;
+			target = D8404EC12F5AE1C600DA54D4 /* Dash */;
 			targetProxy = D8404ED52F5AE1C800DA54D4 /* PBXContainerItemProxy */;
 		};
 		D8404EE02F5AE1C800DA54D4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = D8404EC12F5AE1C600DA54D4 /* Shrome */;
+			target = D8404EC12F5AE1C600DA54D4 /* Dash */;
 			targetProxy = D8404EDF2F5AE1C800DA54D4 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -452,7 +452,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Shrome/Info.plist;
+				INFOPLIST_FILE = Dash/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "\"Used to automatically switch between light and dark mode at sunrise and sunset.\"";
@@ -488,7 +488,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Shrome/Info.plist;
+				INFOPLIST_FILE = Dash/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "\"Used to automatically switch between light and dark mode at sunrise and sunset.\"";
@@ -528,7 +528,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Shrome.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Shrome";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Dash.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Dash";
 			};
 			name = Debug;
 		};
@@ -550,7 +550,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Shrome.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Shrome";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Dash.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Dash";
 			};
 			name = Release;
 		};
@@ -597,7 +597,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		D8404EBD2F5AE1C600DA54D4 /* Build configuration list for PBXProject "Shrome" */ = {
+		D8404EBD2F5AE1C600DA54D4 /* Build configuration list for PBXProject "Dash" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				D8404EE62F5AE1C800DA54D4 /* Debug */,
@@ -606,7 +606,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		D8404EE82F5AE1C800DA54D4 /* Build configuration list for PBXNativeTarget "Shrome" */ = {
+		D8404EE82F5AE1C800DA54D4 /* Build configuration list for PBXNativeTarget "Dash" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				D8404EE92F5AE1C800DA54D4 /* Debug */,
@@ -615,7 +615,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		D8404EEB2F5AE1C800DA54D4 /* Build configuration list for PBXNativeTarget "ShromeTests" */ = {
+		D8404EEB2F5AE1C800DA54D4 /* Build configuration list for PBXNativeTarget "DashTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				D8404EEC2F5AE1C800DA54D4 /* Debug */,
@@ -624,7 +624,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		D8404EEE2F5AE1C800DA54D4 /* Build configuration list for PBXNativeTarget "ShromeUITests" */ = {
+		D8404EEE2F5AE1C800DA54D4 /* Build configuration list for PBXNativeTarget "DashUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				D8404EEF2F5AE1C800DA54D4 /* Debug */,
@@ -636,13 +636,13 @@
 /* End XCConfigurationList section */
 
 /* Begin XCVersionGroup section */
-		D8E5A3472FE4521400934330 /* ShromeDataModel.xcdatamodeld */ = {
+		D8E5A3472FE4521400934330 /* DashDataModel.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
-				D8E5A3482FE4521400934330 /* ShromeDataModel.xcdatamodel */,
+				D8E5A3482FE4521400934330 /* DashDataModel.xcdatamodel */,
 			);
-			currentVersion = D8E5A3482FE4521400934330 /* ShromeDataModel.xcdatamodel */;
-			path = ShromeDataModel.xcdatamodeld;
+			currentVersion = D8E5A3482FE4521400934330 /* DashDataModel.xcdatamodel */;
+			path = DashDataModel.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;
 		};

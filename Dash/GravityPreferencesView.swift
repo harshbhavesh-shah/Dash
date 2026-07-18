@@ -146,7 +146,7 @@ struct GravityPreferencesView: View {
                         accentColor: prefs.accentColor
                     )
                     .onTapGesture {
-                        withAnimation(.shromeSnappy) {
+                        withAnimation(.dashSnappy) {
                             selectedSection = section
                         }
                     }
@@ -372,7 +372,7 @@ struct AppearanceSection: View {
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    withAnimation(.shromeBouncy) {
+                    withAnimation(.dashBouncy) {
                         prefs.updateTheme(to: theme)
                     }
                 }
@@ -433,7 +433,7 @@ struct AppearanceSection: View {
 
                     Button("Choose Image…") {
                         if let path = BackgroundImageStore.pickAndSaveImage() {
-                            withAnimation(.shromeSnappy) {
+                            withAnimation(.dashSnappy) {
                                 prefs.landingBackgroundImagePath = path
                             }
                         }
@@ -447,7 +447,7 @@ struct AppearanceSection: View {
                 PrefsRow(label: "Remove background photo", isLast: true) {
                     Button(role: .destructive) {
                         BackgroundImageStore.clearStoredFile()
-                        withAnimation(.shromeSnappy) {
+                        withAnimation(.dashSnappy) {
                             prefs.landingBackgroundImagePath = ""
                         }
                     } label: {

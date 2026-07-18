@@ -41,7 +41,7 @@ struct BrowserView: View {
                     ),
                     namespace: namespace
                 ) { newUrl in
-                    withAnimation(.shromeBouncy) {
+                    withAnimation(.dashBouncy) {
                         // --- FIXED: Pass the storage token here too ---
                         tabManager.updateActiveUrl(urlString: newUrl, searchEngine: searchEngine)
                         isSidebarVisible = false

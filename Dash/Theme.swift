@@ -9,7 +9,7 @@ import SwiftUI
 
 extension Color {
     static let babyPink = Color(red: 1.0, green: 0.75, blue: 0.85)
-    static let shromePrivate = Color(red: 0.64, green: 0.42, blue: 0.96)
+    static let dashPrivate = Color(red: 0.64, green: 0.42, blue: 0.96)
 }
 
 // BUG FIX: FloatingAddressBar and GravityLandingView each declared their own
@@ -72,13 +72,13 @@ extension View {
 }
 
 extension Animation {
-    static var shromeBouncy: Animation {
+    static var dashBouncy: Animation {
         .spring(response: 0.42, dampingFraction: 0.68)
     }
-    static var shromeSnappy: Animation {
+    static var dashSnappy: Animation {
         .spring(response: 0.3, dampingFraction: 0.62)
     }
-    static var shromePop: Animation {
+    static var dashPop: Animation {
         .spring(response: 0.22, dampingFraction: 0.55)
     }
 }
@@ -88,7 +88,7 @@ struct BouncyButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? pressedScale : 1.0)
-            .animation(.shromePop, value: configuration.isPressed)
+            .animation(.dashPop, value: configuration.isPressed)
     }
 }
 

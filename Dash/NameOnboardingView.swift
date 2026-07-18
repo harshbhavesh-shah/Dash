@@ -111,7 +111,7 @@ struct NameOnboardingView: View {
             .opacity(isVisible ? 1 : 0)
         }
         .onAppear {
-            withAnimation(.shromeBouncy) {
+            withAnimation(.dashBouncy) {
                 isVisible = true
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -124,7 +124,7 @@ struct NameOnboardingView: View {
     }
 
     private func dismiss(with name: String) {
-        withAnimation(.shromeSnappy) {
+        withAnimation(.dashSnappy) {
             isVisible = false
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {

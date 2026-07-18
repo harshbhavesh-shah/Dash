@@ -52,7 +52,7 @@ private struct GlassFavoriteTile: View {
                     if isPrivateSession {
                         Image(systemName: site.icon)
                             .font(.system(size: 20, weight: .medium))
-                            .foregroundStyle(Color.shromePrivate)
+                            .foregroundStyle(Color.dashPrivate)
                     } else {
                         AsyncImage(url: faviconURL) { phase in
                             if let image = phase.image {
@@ -81,8 +81,8 @@ private struct GlassFavoriteTile: View {
             .shadow(color: .black.opacity(0.08), radius: 2, x: 0, y: 1)
             // Slight scale-up on hover, quick spring snap
             .scaleEffect(isPressed ? 0.93 : (isHovered ? 1.06 : 1.0))
-            .animation(.shromeSnappy, value: isHovered)
-            .animation(.shromePop, value: isPressed)
+            .animation(.dashSnappy, value: isHovered)
+            .animation(.dashPop, value: isPressed)
 
             Text(site.name)
                 .font(.system(size: 11, weight: .medium, design: .rounded))
@@ -101,7 +101,7 @@ private struct GlassFavoriteTile: View {
                 .onChanged { _ in isPressed = true }
                 .onEnded { _ in
                     isPressed = false
-                    withAnimation(.shromeBouncy) {
+                    withAnimation(.dashBouncy) {
                         onSubmit(site.url)
                     }
                 }
@@ -163,7 +163,7 @@ struct GravityLandingView: View {
     var accentColor: Color { Color(red: r, green: g, blue: b) }
 
     private var effectiveAccentColor: Color {
-        isPrivateSession ? .shromePrivate : accentColor
+        isPrivateSession ? .dashPrivate : accentColor
     }
 
     private var isPrivateSession: Bool {
@@ -345,7 +345,7 @@ struct GravityLandingView: View {
             debounceTask?.cancel()
         }
         .onChange(of: landingBackgroundImagePath) { _, newPath in
-            withAnimation(.shromeBouncy) {
+            withAnimation(.dashBouncy) {
                 cachedBackgroundImage = BackgroundImageStore.loadImage(at: newPath)
             }
         }

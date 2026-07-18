@@ -22,7 +22,7 @@ struct DownloadShelfView: View {
                 Spacer()
 
                 Button(action: {
-                    withAnimation(.shromeSnappy) {
+                    withAnimation(.dashSnappy) {
                         downloadManager.dismissShelf()
                     }
                 }) {
@@ -100,7 +100,7 @@ private struct ShelfRow: View {
         .offset(y: hasDropped ? 0 : -24)
         .opacity(hasDropped ? 1 : 0)
         .onAppear {
-            withAnimation(.shromeBouncy) {
+            withAnimation(.dashBouncy) {
                 hasDropped = true
             }
 

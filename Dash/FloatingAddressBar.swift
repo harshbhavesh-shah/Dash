@@ -51,7 +51,7 @@ struct FloatingAddressBar: View {
         HStack(spacing: 15) {
             Image(systemName: isPrivate ? "shield.fill" : "magnifyingglass")
                 .font(.system(size: 13, weight: .black))
-                .foregroundColor(isPrivate ? .shromePrivate : Color.primary.opacity(0.65))
+                .foregroundColor(isPrivate ? .dashPrivate : Color.primary.opacity(0.65))
 
             InlineCompleteTextField(
                 text: $urlString,
@@ -72,7 +72,7 @@ struct FloatingAddressBar: View {
             if isPrivate {
                 Image(systemName: "eye.slash.fill")
                     .font(.system(size: 10))
-                    .foregroundColor(.shromePrivate.opacity(0.6))
+                    .foregroundColor(.dashPrivate.opacity(0.6))
             }
 
             if tabManager.activeTab.url.absoluteString != "about:blank" {
@@ -111,15 +111,15 @@ struct FloatingAddressBar: View {
         // values, lets the system do that contrast blending natively —
         // no manual color-scheme branching or opaque scrim required.
         .glassEffect(
-            isPrivate ? .regular.tint(Color.shromePrivate.opacity(0.15)) : .regular,
+            isPrivate ? .regular.tint(Color.dashPrivate.opacity(0.15)) : .regular,
             in: Capsule()
         )
         .overlay {
             Capsule()
                 .strokeBorder(Color.primary.opacity(0.09), lineWidth: 1)
         }
-        .shadow(color: isPrivate ? .shromePrivate.opacity(0.1) : .black.opacity(0.05), radius: 12, x: 0, y: 6)
-        .animation(.shromePop, value: isCurrentPageFavorited)
+        .shadow(color: isPrivate ? .dashPrivate.opacity(0.1) : .black.opacity(0.05), radius: 12, x: 0, y: 6)
+        .animation(.dashPop, value: isCurrentPageFavorited)
         .onAppear {
             cachedFavorites = decodeFavorites(from: customFavoritesJSON)
         }
@@ -199,7 +199,7 @@ struct FloatingAddressBar: View {
 
         if let encodedData = try? JSONEncoder().encode(currentList),
            let jsonString = String(data: encodedData, encoding: .utf8) {
-            withAnimation(.shromeSnappy) {
+            withAnimation(.dashSnappy) {
                 customFavoritesJSON = jsonString
             }
         }

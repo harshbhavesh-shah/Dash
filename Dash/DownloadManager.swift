@@ -44,12 +44,12 @@ class DownloadManager: NSObject, ObservableObject {
     private func scheduleShelfCleanup(id: UUID) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { [weak self] in
             guard let self else { return }
-            withAnimation(.shromeSnappy) {
+            withAnimation(.dashSnappy) {
                 self.shelfItems.removeAll { $0.id == id }
             }
             if self.shelfItems.isEmpty {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    withAnimation(.shromeSnappy) {
+                    withAnimation(.dashSnappy) {
                         self.isShelfVisible = false
                     }
                 }
@@ -159,7 +159,7 @@ extension DownloadManager: WKDownloadDelegate {
                 id: id, receivedBytes: 0, totalBytes: totalBytes, fractionCompleted: 0
             )
 
-            withAnimation(.shromeBouncy) {
+            withAnimation(.dashBouncy) {
                 self.isShelfVisible = true
                 self.shelfItems.append(
                     ShelfDownloadInfo(id: id, filename: destination.lastPathComponent, status: "downloading", fractionCompleted: 0)
