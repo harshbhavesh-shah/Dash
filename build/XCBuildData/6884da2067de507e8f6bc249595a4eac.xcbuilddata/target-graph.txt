@@ -1,4 +1,0 @@
-Target dependency graph (2 targets)
-Target 'DashUITests' in project 'Dash'
-➜ Explicit dependency on target 'Dash' in project 'Dash'
-Target 'Dash' in project 'Dash' (no dependencies)
