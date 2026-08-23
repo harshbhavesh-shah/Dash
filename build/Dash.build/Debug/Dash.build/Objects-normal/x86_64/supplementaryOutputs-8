@@ -1,0 +1,37 @@
+{
+  "/Users/harsh/Developer/Dash/Dash/LiquidGlassClockPanel.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/LiquidGlassClockPanel.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/LiquidGlassClockPanel.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/LiquidGlassClockPanel.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/LiquidGlassClockPanel.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/LiquidGlassClockPanel.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/NameOnboardingView.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/NameOnboardingView.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/NameOnboardingView.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/NameOnboardingView.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/NameOnboardingView.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/NameOnboardingView.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/OnboardingOrbBackground.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/OnboardingOrbBackground.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/OnboardingOrbBackground.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/OnboardingOrbBackground.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/OnboardingOrbBackground.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/OnboardingOrbBackground.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/OnboardingWelcomeView.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/OnboardingWelcomeView.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/OnboardingWelcomeView.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/OnboardingWelcomeView.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/OnboardingWelcomeView.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/OnboardingWelcomeView.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/Persistence.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/Persistence.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/Persistence.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/Persistence.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/Persistence.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/Persistence.swiftdeps"
+  }
+}

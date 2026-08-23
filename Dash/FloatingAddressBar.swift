@@ -1,6 +1,6 @@
 //
 //  FloatingAddressBar.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 06/03/2026.
 //
@@ -16,7 +16,7 @@ struct FloatingAddressBar: View {
     @AppStorage("accentColorRed") private var r: Double = 0.96
     @AppStorage("accentColorGreen") private var g: Double = 0.55
     @AppStorage("accentColorBlue") private var b: Double = 0.72
-    @AppStorage("customFavoritesJSON") private var customFavoritesJSON: String = ShromeDefaults.favoritesJSON
+    @AppStorage("customFavoritesJSON") private var customFavoritesJSON: String = DashDefaults.favoritesJSON
     @AppStorage("searchSuggestions") private var searchSuggestions: Bool = true
     @State private var cachedFavorites: [FavItem] = []
     @State private var topSuggestion: String? = nil

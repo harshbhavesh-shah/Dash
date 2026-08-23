@@ -1,6 +1,6 @@
 //
 //  HistoryView.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 18/06/2026.
 //
@@ -114,6 +114,12 @@ struct HistoryView: View {
             viewContext.delete(item)
         }
         try? viewContext.save()
+
+        // BUG FIX: see GravityPreferencesView.clearAllDataNow() — other
+        // contexts (e.g. TabManager's background context) cache HistoryItem
+        // objects and need to drop them after a wipe, or a new row can
+        // collide with a stale cached object reusing the same SQLite row ID.
+        NotificationCenter.default.post(name: .dashDidClearAllHistory, object: nil)
     }
 }
 

@@ -1,6 +1,6 @@
 //
 //  GravityPreferencesView.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 06/03/2026.
 //
@@ -34,7 +34,7 @@ class GravityPreferences: ObservableObject {
     @AppStorage("accentColorGreen") var accentColorGreen: Double = 0.55
     @AppStorage("accentColorBlue")  var accentColorBlue:  Double = 0.72
 
-    @AppStorage("selectedShromeTheme") var selectedTheme: ShromeTheme = .cosmicPastel
+    @AppStorage("selectedDashTheme") var selectedTheme: DashTheme = .cosmicPastel
 
     @AppStorage(BackgroundImageStore.appStorageKey) var landingBackgroundImagePath: String = ""
 
@@ -51,7 +51,7 @@ class GravityPreferences: ObservableObject {
 
     var accentColor: Color { selectedTheme.accentColor }
 
-    func updateTheme(to theme: ShromeTheme) {
+    func updateTheme(to theme: DashTheme) {
         selectedTheme = theme
         // PERF FIX: Guard against nil for wide-gamut P3 colors
         guard let components = NSColor(theme.accentColor).usingColorSpace(.sRGB) else { return }
@@ -132,7 +132,7 @@ struct GravityPreferencesView: View {
         HStack(spacing: 0) {
             // MARK: Sidebar
             VStack(alignment: .leading, spacing: 4) {
-                Text("Shrome Settings")
+                Text("Dash Settings")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(.primary.opacity(0.5))
                     .padding(.horizontal, 16)
@@ -303,7 +303,7 @@ struct GeneralSection: View {
                     .font(.system(size: 12))
             }
 
-            PrefsRow(label: "On startup", sublabel: "Choose how Shrome boots up") {
+            PrefsRow(label: "On startup", sublabel: "Choose how Dash boots up") {
                 Picker("", selection: $prefs.startupBehavior) {
                     ForEach(StartupBehavior.allCases, id: \.self) { behavior in
                         Text(behavior.rawValue).tag(behavior)
@@ -332,7 +332,7 @@ struct AppearanceSection: View {
     ]
 
     private var appearanceSublabel: String {
-        "Choose how Shrome looks, or let it match your Mac's system setting"
+        "Choose how Dash looks, or let it match your Mac's system setting"
     }
 
     var body: some View {
@@ -344,7 +344,7 @@ struct AppearanceSection: View {
             .padding(.bottom, 8)
 
         LazyVGrid(columns: themeColumns, spacing: 14) {
-            ForEach(ShromeTheme.allCases) { theme in
+            ForEach(DashTheme.allCases) { theme in
                 VStack(spacing: 6) {
                     ZStack {
                         Circle()
@@ -514,7 +514,7 @@ struct PrivacySection: View {
                     .labelsHidden()
             }
 
-            PrefsRow(label: "Clear history & cache on quit", sublabel: "All data will be wiped when Shrome closes") {
+            PrefsRow(label: "Clear history & cache on quit", sublabel: "All data will be wiped when Dash closes") {
                 Toggle("", isOn: $prefs.clearOnQuit)
                     .toggleStyle(.switch)
                     .labelsHidden()
@@ -575,7 +575,7 @@ struct PrivacySection: View {
             print("Failed to clear history: \(error)")
         }
 
-        NotificationCenter.default.post(name: .shromeDidClearAllHistory, object: nil)
+        NotificationCenter.default.post(name: .dashDidClearAllHistory, object: nil)
 
         let dataTypes = WKWebsiteDataStore.allWebsiteDataTypes()
         WKWebsiteDataStore.default().removeData(ofTypes: dataTypes, modifiedSince: .distantPast) {

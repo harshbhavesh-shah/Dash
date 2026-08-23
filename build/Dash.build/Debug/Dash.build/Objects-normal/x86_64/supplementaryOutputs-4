@@ -1,0 +1,37 @@
+{
+  "/Users/harsh/Developer/Dash/Dash/DownloadManager.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DownloadManager.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DownloadManager.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DownloadManager.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DownloadManager.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DownloadManager.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/DownloadShelfView.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DownloadShelfView.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DownloadShelfView.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DownloadShelfView.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DownloadShelfView.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DownloadShelfView.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/DownloadView.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DownloadView.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DownloadView.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DownloadView.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DownloadView.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DownloadView.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/FindBarView.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/FindBarView.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/FindBarView.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/FindBarView.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/FindBarView.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/FindBarView.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/FloatingAddressBar.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/FloatingAddressBar.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/FloatingAddressBar.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/FloatingAddressBar.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/FloatingAddressBar.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/FloatingAddressBar.swiftdeps"
+  }
+}

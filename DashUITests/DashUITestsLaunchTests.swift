@@ -1,13 +1,13 @@
 //
-//  ShromeUITestsLaunchTests.swift
-//  ShromeUITests
+//  DashUITestsLaunchTests.swift
+//  DashUITests
 //
 //  Created by Harsh Shah on 06/03/2026.
 //
 
 import XCTest
 
-final class ShromeUITestsLaunchTests: XCTestCase {
+final class DashUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true

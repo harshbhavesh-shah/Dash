@@ -1,6 +1,6 @@
 //
 //  BackgroundImageStore.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 06/03/2026.
 //
@@ -18,7 +18,7 @@ enum BackgroundImageStore {
             return nil
         }
         let dir = appSupport
-            .appendingPathComponent("Shrome", isDirectory: true)
+            .appendingPathComponent("Dash", isDirectory: true)
             .appendingPathComponent("Backgrounds", isDirectory: true)
 
         if !FileManager.default.fileExists(atPath: dir.path) {

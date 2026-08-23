@@ -1,6 +1,6 @@
 //
 //  WebViewPool.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 06/03/2026.
 //
@@ -100,7 +100,7 @@ class WebViewPool {
             while self.privatePool.count < self.maxPoolSize {
                 self.privatePool.append(self.createFreshWebView(isPrivate: true))
             }
-            print("⚡️ Shrome Process Pool Warmed: Standard (\(self.standardPool.count)), Private (\(self.privatePool.count))")
+            print("⚡️ Dash Process Pool Warmed: Standard (\(self.standardPool.count)), Private (\(self.privatePool.count))")
         }
     }
     func webView(for tabId: UUID, isPrivate: Bool) -> WKWebView {

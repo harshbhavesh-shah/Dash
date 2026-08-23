@@ -1,6 +1,6 @@
 //
 //  LiquidGlassClockPanel.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 06/03/2026.
 //
