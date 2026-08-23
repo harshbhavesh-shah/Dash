@@ -1,6 +1,6 @@
 //
 //  SidebarView.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 06/03/2026.
 //
@@ -72,12 +72,48 @@ struct SidebarView: View {
         .padding(.vertical, 16)
         .padding(.leading, 16)
         .frame(width: isVisible ? sidebarWidth : 55)
+        // BUG FIX: without a bounded height here, this view (and everything
+        // inside it, including tabContent's ScrollView) just sized itself to
+        // fit its own content — a ScrollView needs a *bounded* parent height
+        // to actually clip and scroll, otherwise it reports its full content
+        // height upward and nothing scrolls. That's why adding tabs pushed
+        // the tab-groups deck down and eventually off the top/bottom of the
+        // window instead of scrolling. Filling the available height here
+        // lets tabContent split that fixed height between a flexible scroll
+        // region and a fixed-size groups deck pinned at the bottom.
+        .frame(maxHeight: .infinity)
     }
 
+    // BUG FIX: the tab-groups deck used to live inside the same ScrollView
+    // as the pinned/unassigned tabs, and that whole VStack had no bounded
+    // height (see the fix on the outer body above) — so it just grew
+    // forever, pushing the groups deck down and eventually off-screen as
+    // more tabs were added instead of scrolling. Splitting the groups deck
+    // out as a fixed-size sibling *below* the ScrollView (rather than
+    // inside it) makes it a non-flexible footer: SwiftUI gives it its
+    // natural size first and lets the ScrollView above absorb whatever
+    // space is left, scrolling internally once the tab list no longer
+    // fits — so the groups deck now stays pinned at the bottom instead of
+    // being pushed away.
     private var tabContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
+                    // SECTOR A0: PINNED TABS
+                    let pinnedTabs = tabManager.tabs.filter { $0.isPinned }
+                    if !pinnedTabs.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("PINNED")
+                                .font(.system(size: 10, weight: .black))
+                                .foregroundColor(.primary.opacity(0.4))
+                                .padding(.leading, 12)
+
+                            ForEach(pinnedTabs) { tab in
+                                tabRow(for: tab)
+                            }
+                        }
+                    }
+
                     // SECTOR A: UNASSIGNED TABS
                     VStack(alignment: .leading, spacing: 8) {
                         Text("TABS")
@@ -85,7 +121,7 @@ struct SidebarView: View {
                             .foregroundColor(.primary.opacity(0.4))
                             .padding(.leading, 12)
 
-                        let unassignedTabs = tabManager.tabs.filter { $0.groupId == nil }
+                        let unassignedTabs = tabManager.tabs.filter { $0.groupId == nil && !$0.isPinned }
 
                         if unassignedTabs.isEmpty {
                             Text("No unassigned tabs")
@@ -95,42 +131,56 @@ struct SidebarView: View {
                                 .padding(.vertical, 4)
                         } else {
                             ForEach(unassignedTabs) { tab in
-                                TabRow(
-                                    tab: tab,
-                                    isActive: tabManager.activeTabId == tab.id,
-                                    groups: tabManager.groups,
-                                    onActivate: {
-                                        withAnimation(.dashSnappy) {
-                                            tabManager.activeTabId = tab.id
-                                        }
-                                    },
-                                    onClose: {
-                                        withAnimation(.dashSnappy) {
-                                            tabManager.closeTab(id: tab.id)
-                                        }
-                                    },
-                                    onMoveToGroup: { groupId in
-                                        if let idx = tabManager.tabs.firstIndex(where: { $0.id == tab.id }) {
-                                            withAnimation(.dashSnappy) {
-                                                tabManager.tabs[idx].groupId = groupId
-                                            }
-                                            tabManager.saveSession()
-                                        }
-                                    }
-                                )
+                                tabRow(for: tab)
                             }
                         }
                     }
-
-                    Divider().opacity(0.1).padding(.horizontal, 10)
-
-                    OpenSidebarGroupsDeck(tabManager: tabManager)
                 }
                 .padding(.horizontal, 10)
                 .padding(.top, 34)
+                .padding(.bottom, 12)
             }
+
+            Divider().opacity(0.1).padding(.horizontal, 10)
+
+            OpenSidebarGroupsDeck(tabManager: tabManager)
+                .padding(.horizontal, 10)
+                .padding(.top, 12)
+                .padding(.bottom, 16)
         }
         .frame(width: max(0, sidebarWidth - 80))
+        .frame(maxHeight: .infinity)
+    }
+
+    private func tabRow(for tab: Tab) -> some View {
+        TabRow(
+            tab: tab,
+            isActive: tabManager.activeTabId == tab.id,
+            groups: tabManager.groups,
+            onActivate: {
+                withAnimation(.dashSnappy) {
+                    tabManager.activeTabId = tab.id
+                }
+            },
+            onClose: {
+                withAnimation(.dashSnappy) {
+                    tabManager.closeTab(id: tab.id)
+                }
+            },
+            onMoveToGroup: { groupId in
+                if let idx = tabManager.tabs.firstIndex(where: { $0.id == tab.id }) {
+                    withAnimation(.dashSnappy) {
+                        tabManager.tabs[idx].groupId = groupId
+                    }
+                    tabManager.saveSession()
+                }
+            },
+            onTogglePin: {
+                withAnimation(.dashSnappy) {
+                    tabManager.togglePin(id: tab.id)
+                }
+            }
+        )
     }
 }
 
@@ -143,6 +193,7 @@ struct TabRow: View {
     var onActivate: () -> Void
     var onClose: () -> Void
     var onMoveToGroup: (UUID?) -> Void
+    var onTogglePin: () -> Void
 
     @State private var isHovered = false
 
@@ -181,7 +232,7 @@ struct TabRow: View {
             ZStack {
                 if isHovered {
                     Button(action: {
-                        ShromeHaptics.confirmationTap()
+                        DashHaptics.confirmationTap()
                         onClose()
                     }) {
                         Image(systemName: "xmark.circle.fill")
@@ -190,6 +241,10 @@ struct TabRow: View {
                     }
                     .buttonStyle(.bouncy)
                     .transition(.scale.combined(with: .opacity))
+                } else if tab.isPinned {
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(.primary.opacity(0.35))
                 } else if isActive {
                     Circle()
                         .fill(tab.isPrivate ? .dashPrivate : accentColor)
@@ -210,16 +265,39 @@ struct TabRow: View {
             }
         )
         .cornerRadius(14)
-        .scaleEffect(isHovered ? 1.035 : 1.0)
-        .animation(.dashSnappy, value: isHovered)
+        // BUG FIX: `.contentShape` + `.onHover` used to sit *after*
+        // `.scaleEffect`, so the hover hit-test region was the animated,
+        // growing/shrinking geometry itself. As the (underdamped, slightly
+        // overshooting) spring grew this row on hover, its edge swept past
+        // the mouse, ending hover, which shrank it back, which re-entered
+        // hover, which grew it again — a self-sustaining oscillation that
+        // fired push/pop dozens of times a second and made the cursor
+        // visibly stutter between arrow and pointing-hand. Fixing the hit
+        // region to the pre-scale geometry (by hoisting these two above
+        // `.scaleEffect`) makes hover state stable regardless of the
+        // decorative scale animation.
+        .contentShape(Rectangle())
         .onHover { hovering in
             isHovered = hovering
-            if hovering { NSCursor.pointingHand.push() }
-            else { NSCursor.pop() }
+            // BUG FIX: `.push()`/`.pop()` is a stack that requires every
+            // push to be matched by exactly one pop. Clicking this row's
+            // close button while hovering removes the Tab from the array,
+            // which destroys this view immediately — the `onHover(false)`
+            // that would fire `.pop()` never runs, so the pushed cursor is
+            // orphaned on the stack permanently. Repeat that a few times in
+            // a session and later, unrelated `.pop()` calls elsewhere start
+            // popping the wrong layer, producing cursor state that looks
+            // "random." `.set()` is idempotent — no stack, no orphaning.
+            (hovering ? NSCursor.pointingHand : NSCursor.arrow).set()
         }
-        .contentShape(Rectangle())
+        .scaleEffect(isHovered ? 1.035 : 1.0)
+        .animation(.dashSnappy, value: isHovered)
         .onTapGesture(perform: onActivate)
         .contextMenu {
+            Button(action: onTogglePin) {
+                Label(tab.isPinned ? "Unpin Tab" : "Pin Tab", systemImage: tab.isPinned ? "pin.slash" : "pin")
+            }
+
             Menu("Move Tab to Group") {
                 Button("Unassigned (General)") {
                     onMoveToGroup(nil)
@@ -288,14 +366,18 @@ struct CircleButton: View {
                 .opacity(isHovered ? 1.0 : 0.0)
         }
         .frame(width: 12, height: 12)
+        // BUG FIX: see TabRow above — same self-induced hover-oscillation
+        // and cursor-stack-orphaning bugs (this button growing under the
+        // cursor as it scales, plus stacked push/pop). Fixed the same way:
+        // a stable pre-scale hit region, and `.set()` instead of push/pop.
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            isHovered = hovering
+            (hovering ? NSCursor.pointingHand : NSCursor.arrow).set()
+        }
         .scaleEffect(isHovered ? 1.25 : 1.0)
         .shadow(color: color.opacity(isHovered ? 0.6 : 0), radius: isHovered ? 6 : 0, x: 0, y: 2)
         .animation(.dashPop, value: isHovered)
-        .onHover { hovering in
-            isHovered = hovering
-            if hovering { NSCursor.pointingHand.push() }
-            else { NSCursor.pop() }
-        }
         .onTapGesture(perform: action)
     }
 }

@@ -1,0 +1,16 @@
+{
+  "source": "/Users/harsh/Developer/Dash/Dash/DownloadShelfView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Downloads",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 18
+        }
+      }
+    ]
+  },
+  "version": 1
+}

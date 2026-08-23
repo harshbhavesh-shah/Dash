@@ -1,6 +1,6 @@
 //
 //  UpdateNotificationView.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 12/07/2026.
 //
@@ -22,7 +22,7 @@ struct UpdateNotificationView: View {
                         .foregroundStyle(.blue)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Shrome \(updateInfo.version) is available")
+                        Text("Dash \(updateInfo.version) is available")
                             .font(.system(size: 13, weight: .semibold, design: .rounded))
                             .foregroundColor(.primary)
                         Text("Click to see what's new")

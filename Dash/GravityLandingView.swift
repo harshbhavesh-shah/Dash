@@ -1,6 +1,6 @@
 //
 //  GravityLandingView.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 06/03/2026.
 //
@@ -93,8 +93,12 @@ private struct GlassFavoriteTile: View {
         .contentShape(Circle())
         .onHover { hovering in
             isHovered = hovering
-            if hovering { NSCursor.pointingHand.push() }
-            else { NSCursor.pop() }
+            // BUG FIX: see SidebarView.TabRow — `.push()`/`.pop()` requires
+            // exact pairing, and a hover-ending view can be torn down (or
+            // the click's own `onSubmit` can navigate away) before the
+            // matching pop runs, orphaning cursor state on the stack.
+            // `.set()` has no stack to corrupt.
+            (hovering ? NSCursor.pointingHand : NSCursor.arrow).set()
         }
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
@@ -188,7 +192,7 @@ struct GravityLandingView: View {
         return "Where are we sailing today?"
     }
 
-    @AppStorage("customFavoritesJSON") private var customFavoritesJSON: String = ShromeDefaults.favoritesJSON
+    @AppStorage("customFavoritesJSON") private var customFavoritesJSON: String = DashDefaults.favoritesJSON
 
     private var favorites: [(name: String, url: String, icon: String)] {
         struct FavItem: Codable { let name: String; let url: String; let icon: String }
@@ -252,7 +256,7 @@ struct GravityLandingView: View {
                     InlineCompleteTextField(
                         text: $urlString,
                         suggestion: topSuggestion,
-                        placeholder: "Search with Shrome...",
+                        placeholder: "Search with Dash...",
                         font: .systemFont(ofSize: 15, weight: .medium),
                         textColor: NSColor.labelColor,
                         autoFocusOnAppear: true,

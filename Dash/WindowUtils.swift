@@ -1,6 +1,6 @@
 //
 //  WindowUtils.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 06/03/2026.
 //
@@ -13,7 +13,7 @@ extension Notification.Name {
     static let openNewTabFromLink    = Notification.Name("openNewTabFromLink")
     static let openNewWindowWithURL  = Notification.Name("openNewWindowWithURL")
     static let openURLInNewWindow    = Notification.Name("openURLInNewWindow")
-    static let shromeDidClearAllHistory = Notification.Name("shromeDidClearAllHistory")
+    static let dashDidClearAllHistory = Notification.Name("dashDidClearAllHistory")
 }
 
 struct WebView: NSViewRepresentable {
@@ -143,7 +143,7 @@ struct WebView: NSViewRepresentable {
 
 struct WindowHacker: NSViewRepresentable {
     var showNativeButtons: Bool
-    var windowAutosaveName: String = "ShromeMainWindow"
+    var windowAutosaveName: String = "DashMainWindow"
     var onResolveWindow: ((NSWindow) -> Void)? = nil
 
     func makeNSView(context: Context) -> NSView {

@@ -1,6 +1,6 @@
 //
 //  NameOnboardingView.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 06/03/2026.
 //
@@ -38,7 +38,7 @@ struct NameOnboardingView: View {
                 }
 
                 VStack(spacing: 6) {
-                    Text("Welcome to Shrome")
+                    Text("Welcome to Dash")
                         .font(.system(size: 20, weight: .bold, design: .rounded))
                         .foregroundColor(.primary)
 

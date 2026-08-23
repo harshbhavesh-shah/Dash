@@ -1,0 +1,37 @@
+{
+  "/Users/harsh/Developer/Dash/Dash/UpdateChecker.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/UpdateChecker.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/UpdateChecker.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/UpdateChecker.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/UpdateChecker.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/UpdateChecker.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/UpdateNotificationView.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/UpdateNotificationView.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/UpdateNotificationView.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/UpdateNotificationView.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/UpdateNotificationView.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/UpdateNotificationView.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/WebViewPool.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/WebViewPool.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/WebViewPool.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/WebViewPool.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/WebViewPool.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/WebViewPool.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/WindowUtils.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/WindowUtils.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/WindowUtils.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/WindowUtils.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/WindowUtils.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/WindowUtils.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/DerivedSources/CoreDataGenerated/Dash/Item+CoreDataClass.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/Item+CoreDataClass.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/Item+CoreDataClass.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/Item+CoreDataClass.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/Item+CoreDataClass.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/arm64/Item+CoreDataClass.swiftdeps"
+  }
+}

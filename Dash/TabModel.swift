@@ -1,6 +1,6 @@
 //
 //  TabModel.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 06/03/2026.
 //
@@ -25,6 +25,7 @@ struct Tab: Identifiable, Hashable, Codable {
     var isPrivate: Bool
     var groupId: UUID? = nil
     var reloadTrigger: UUID = UUID()
+    var isPinned: Bool = false
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
@@ -36,7 +37,8 @@ struct Tab: Identifiable, Hashable, Codable {
         lhs.title == rhs.title &&
         lhs.isPrivate == rhs.isPrivate &&
         lhs.groupId == rhs.groupId &&
-        lhs.reloadTrigger == rhs.reloadTrigger
+        lhs.reloadTrigger == rhs.reloadTrigger &&
+        lhs.isPinned == rhs.isPinned
     }
 }
 
@@ -58,15 +60,36 @@ class TabManager: ObservableObject {
     private var saveDebounceTask: Task<Void, Never>?
     private var clearHistoryObserver: NSObjectProtocol?
 
-    init() {
-        loadSessionOrCreateDefault()
+    // MARK: - Reopen Closed Tab (⌘⇧T)
+    private var closedTabsStack: [Tab] = []
+    private let maxClosedTabsHistory = 20
+
+    // BUG FIX: previously `init()` unconditionally called
+    // `loadSessionOrCreateDefault()`, which — under the default "Continue
+    // where I left off" startup behavior — restores tabs from the *regular*
+    // saved session in UserDefaults into whichever TabManager is being
+    // created, private or not. A brand-new Private Window would then open
+    // showing the user's regular browsing tabs (ContentView.onAppear only
+    // flips `isPrivate = true` on the already-restored tabs after the fact).
+    // Worse, because those restored tabs kept their original UUIDs,
+    // WebViewPool could hand the "private" window the exact same live
+    // WKWebView already in use by a normal window for that tab, sharing
+    // cookies/session/rendered content across the privacy boundary. Private
+    // windows must always start from a single fresh, private tab instead of
+    // touching the persisted session at all.
+    init(isPrivateContext: Bool = false) {
+        if isPrivateContext {
+            createNewTab(isPrivate: true)
+        } else {
+            loadSessionOrCreateDefault()
+        }
 
         // See GravityPreferencesView.clearAllDataNow(): after a full wipe,
         // this context needs to drop any cached HistoryItem objects it
         // still holds so it doesn't collide with new rows that reuse the
         // same underlying SQLite row IDs.
         clearHistoryObserver = NotificationCenter.default.addObserver(
-            forName: .shromeDidClearAllHistory, object: nil, queue: .main
+            forName: .dashDidClearAllHistory, object: nil, queue: .main
         ) { [weak self] _ in
             guard let self else { return }
             self.backgroundContext.perform {
@@ -181,7 +204,31 @@ class TabManager: ObservableObject {
         }
         WebViewPool.shared.releaseWebView(for: id)
 
+        closedTabsStack.append(closedTab)
+        if closedTabsStack.count > maxClosedTabsHistory {
+            closedTabsStack.removeFirst()
+        }
+
         if !closedTab.isPrivate { saveSession() }
+    }
+
+    /// Restores the most recently closed tab (⌘⇧T), reusing its original id
+    /// — WebViewPool already released that id's WKWebView on close, so
+    /// `webView(for:)` will hand back a fresh one from the pool and WebView's
+    /// `updateNSView` will load the tab's URL normally.
+    func reopenLastClosedTab() {
+        guard let restored = closedTabsStack.popLast() else { return }
+        tabs.append(restored)
+        activeTabId = restored.id
+        if !restored.isPrivate { saveSession() }
+    }
+
+    var canReopenClosedTab: Bool { !closedTabsStack.isEmpty }
+
+    func togglePin(id: UUID) {
+        guard let index = tabs.firstIndex(where: { $0.id == id }) else { return }
+        tabs[index].isPinned.toggle()
+        if !tabs[index].isPrivate { saveSession() }
     }
 
     func reloadActiveTab() {

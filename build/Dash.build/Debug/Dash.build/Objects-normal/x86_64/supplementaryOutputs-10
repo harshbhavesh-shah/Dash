@@ -1,0 +1,37 @@
+{
+  "/Users/harsh/Developer/Dash/Dash/QuickSwitcherView.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/QuickSwitcherView.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/QuickSwitcherView.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/QuickSwitcherView.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/QuickSwitcherView.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/QuickSwitcherView.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/SidebarView.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/SidebarView.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/SidebarView.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/SidebarView.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/SidebarView.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/SidebarView.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/TabGroupsDeckView.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/TabGroupsDeckView.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/TabGroupsDeckView.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/TabGroupsDeckView.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/TabGroupsDeckView.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/TabGroupsDeckView.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/TabModel.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/TabModel.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/TabModel.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/TabModel.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/TabModel.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/TabModel.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/Theme.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/Theme.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/Theme.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/Theme.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/Theme.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/Theme.swiftdeps"
+  }
+}

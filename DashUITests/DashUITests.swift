@@ -1,13 +1,13 @@
 //
-//  ShromeUITests.swift
-//  ShromeUITests
+//  DashUITests.swift
+//  DashUITests
 //
 //  Created by Harsh Shah on 06/03/2026.
 //
 
 import XCTest
 
-final class ShromeUITests: XCTestCase {
+final class DashUITests: XCTestCase {
 
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.

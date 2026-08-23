@@ -1,6 +1,6 @@
 //
 //  Persistence.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 06/03/2026.
 //
@@ -32,10 +32,10 @@ struct PersistenceController {
     init(inMemory: Bool = false) {
         // --- FIXED: Dynamically merge both .xcdatamodeld files into a unified core engine ---
         if let mergedModel = NSManagedObjectModel.mergedModel(from: nil) {
-            container = NSPersistentContainer(name: "ShromeUnified", managedObjectModel: mergedModel)
+            container = NSPersistentContainer(name: "DashUnified", managedObjectModel: mergedModel)
         } else {
             // Fallback to the original default setup if merging fails
-            container = NSPersistentContainer(name: "Shrome")
+            container = NSPersistentContainer(name: "Dash")
         }
         
         if inMemory {

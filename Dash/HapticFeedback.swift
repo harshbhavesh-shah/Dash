@@ -1,13 +1,13 @@
 //
 //  HapticFeedback.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 13/07/2026.
 //
 
 import AppKit
 
-enum ShromeHaptics {
+enum DashHaptics {
     static func confirmationTap() {
         let performer = NSHapticFeedbackManager.defaultPerformer
         performer.perform(.generic, performanceTime: .now)

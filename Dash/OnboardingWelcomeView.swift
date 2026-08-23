@@ -1,8 +1,11 @@
 //
 //  OnboardingWelcomeView.swift
-//  Shrome
+//  Dash
 //
-//  Created by Harsh Shah on 15/07/26.
+
+//
+//  OnboardingWelcomeView.swift
+//  Dash
 //
 
 import SwiftUI
@@ -16,16 +19,14 @@ struct OnboardingWelcomeView: View {
 
     var body: some View {
         ZStack {
-            // BUG FIX: previously hardcoded to black — reads as heavy
-            // rather than premium. A light backdrop lets the colorful
-            // blurred orbs actually read as color against brightness,
-            // closer to how Apple's own onboarding moments (e.g. Apple
-            // Intelligence's intro animation) use a light background, not
-            // a dark one, specifically so the color washes have somewhere
-            // to show up against.
             Color(white: 0.97).ignoresSafeArea()
 
+            // Blur applies only to this view, not to the text stacked on
+            // top of it (which is a sibling, not a child, in this ZStack)
+            // — so the whole screen's worth of orbs reads as a soft
+            // backdrop while the text in front stays completely sharp.
             OnboardingOrbBackground(accentColor: accentColor)
+                .blur(radius: 6)
 
             VStack {
                 HStack {
@@ -39,15 +40,37 @@ struct OnboardingWelcomeView: View {
                 Spacer()
             }
 
+            // BUG FIX (design change): previously wrapped in a
+            // .glassEffect() card with padding, border, and shadow — read
+            // as a "small boxed container" that fought the floating,
+            // weightless feel the orbs are going for. Text now floats
+            // directly over the orb background, using a soft white glow
+            // behind it for legibility instead of an opaque container. The
+            // button stays as its own glass pill since it's an actual
+            // control, not just text.
             VStack(spacing: 28) {
                 VStack(spacing: 10) {
-                    Text("Shrome")
-                        .font(.system(size: 46, weight: .bold, design: .rounded))
-                        .foregroundColor(.black.opacity(0.85))
+                    // Minimal per-letter entrance — same spirit as the
+                    // coming-soon page's animated wordmark, simplified down
+                    // to just scale + fade (no glass-transparency effect,
+                    // per "minimal"). Each letter's .animation(delay:)
+                    // overrides the ambient animation from onAppear below,
+                    // so they cascade in slightly staggered rather than
+                    // popping in all at once.
+                    HStack(spacing: 0) {
+                        ForEach(dashCharacters.indices, id: \.self) { index in
+                            dashLetter(at: index)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
+                    .glassEffect(.regular.tint(accentColor.opacity(0.18)), in: RoundedRectangle(cornerRadius: 24))
 
-                    Text("Fast, private, beautifully yours.")
+                    Text("Allergic to ads. Addicted to speed.")
                         .font(.system(size: 15, weight: .medium, design: .rounded))
                         .foregroundColor(accentColor)
+                        .shadow(color: .white.opacity(0.5), radius: 12, x: 0, y: 0)
+                        .multilineTextAlignment(.center)
                 }
 
                 Button(action: onGetStarted) {
@@ -58,31 +81,9 @@ struct OnboardingWelcomeView: View {
                         .padding(.vertical, 12)
                 }
                 .buttonStyle(.plain)
-                // BUG FIX: 0.3 opacity tint read as washy/pale on a light
-                // background — this needs to look like a confident,
-                // saturated CTA now that it's not floating on black.
                 .glassEffect(.regular.tint(accentColor.opacity(0.85)), in: Capsule())
             }
-            .padding(40)
-            // BUG FIX: this card previously had no tint, no border, and no
-            // shadow at all — a glass surface needs a defined edge and some
-            // depth to actually read as glass, not just faintly blur
-            // whatever's behind it.
-            .glassEffect(.regular.tint(accentColor.opacity(0.08)), in: RoundedRectangle(cornerRadius: 32))
-            .overlay {
-                RoundedRectangle(cornerRadius: 32)
-                    .strokeBorder(
-                        LinearGradient(
-                            colors: [.white.opacity(0.9), accentColor.opacity(0.3)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1
-                    )
-            }
-            .shadow(color: accentColor.opacity(0.18), radius: 30, x: 0, y: 15)
-            .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
-            .padding(60)
+            .padding(.horizontal, 40)
             .scaleEffect(isContentVisible ? 1 : 0.9)
             .opacity(isContentVisible ? 1 : 0)
         }
@@ -91,6 +92,48 @@ struct OnboardingWelcomeView: View {
                 isContentVisible = true
             }
         }
+    }
+
+    // Simplified per your ask: real .glassEffect() (applied to the HStack
+    // above, tinted with accentColor for legibility) does the "liquid
+    // glass" work now, instead of approximating it with a manual gradient
+    // fill here. Worth knowing what to expect: .glassEffect() is a
+    // material/background effect — same as how it's used on the button
+    // below and everywhere else in the app — so this renders as a
+    // translucent glass panel sitting behind the whole word, not as
+    // glass-textured letterforms themselves. That's the same mechanism
+    // this app already uses for glass surfaces everywhere else, just
+    // applied to text instead of a button/card.
+    private var dashCharacters: [Character] {
+        Array("Dash")
+    }
+
+    // BUG FIX (round 3): the 6-modifier chain, even after simplifying away
+    // the gradient, was STILL too much for the type-checker — each
+    // chained modifier wraps the previous return type in another generic
+    // layer, and by 6+ modifiers combined with inline arithmetic
+    // (Double(index) * 0.06 + 0.2) in the same expression, the compiler's
+    // inference cost compounds badly. This time: explicit type
+    // annotations at every intermediate step (Text's own modifiers return
+    // Text, so that's cheap and concrete), and AnyView to fully erase the
+    // type after that — guaranteeing the compiler never has to solve a
+    // deep nested-generic chain, regardless of how many modifiers follow.
+    // AnyView's small runtime cost is completely negligible for 4 letters.
+    private func dashLetter(at index: Int) -> some View {
+        let delay: Double = Double(index) * 0.06 + 0.2
+
+        let styledText: Text = Text(String(dashCharacters[index]))
+            .font(.system(size: 46, weight: .bold, design: .rounded))
+            .tracking(-1.5)
+            .foregroundColor(.black.opacity(0.85))
+
+        let animatedView: AnyView = AnyView(
+            styledText
+                .scaleEffect(isContentVisible ? 1 : 0.4)
+                .opacity(isContentVisible ? 1 : 0)
+        )
+
+        return animatedView.animation(.dashBouncy.delay(delay), value: isContentVisible)
     }
 }
 

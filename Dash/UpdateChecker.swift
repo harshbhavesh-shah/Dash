@@ -1,6 +1,6 @@
 //
 //  UpdateChecker.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 12/07/2026.
 //
@@ -19,7 +19,7 @@ class UpdateChecker: ObservableObject {
     static let shared = UpdateChecker()
 
     private let repoOwner = "harshbhavesh-shah"
-    private let repoName = "Shrome"
+    private let repoName = "Dash"
 
     @Published var updateAvailable: UpdateInfo? = nil
 

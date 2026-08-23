@@ -1,0 +1,37 @@
+{
+  "/Users/harsh/Developer/Dash/Dash/AdBlocker.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/AdBlocker.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/AdBlocker.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/AdBlocker.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/AdBlocker.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/AdBlocker.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/BackgroundImageStore.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/BackgroundImageStore.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/BackgroundImageStore.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/BackgroundImageStore.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/BackgroundImageStore.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/BackgroundImageStore.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/BrowserView.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/BrowserView.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/BrowserView.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/BrowserView.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/BrowserView.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/BrowserView.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/ContentView.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/ContentView.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/ContentView.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/ContentView.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/ContentView.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/ContentView.swiftdeps"
+  },
+  "/Users/harsh/Developer/Dash/Dash/DashApp.swift" : {
+    "const-values" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DashApp.swiftconstvalues",
+    "dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DashApp.d",
+    "diagnostics" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DashApp.dia",
+    "object" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DashApp.o",
+    "swift-dependencies" : "/Users/harsh/Developer/Dash/build/Dash.build/Debug/Dash.build/Objects-normal/x86_64/DashApp.swiftdeps"
+  }
+}

@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 06/03/2026.
 //
@@ -13,12 +13,19 @@ import WebKit
 struct ContentView: View {
     var initialURL: URL? = nil
 
-    @StateObject private var tabManager = TabManager()
+    @StateObject private var tabManager: TabManager
+
+    init(initialURL: URL? = nil, isPrivate: Bool = false) {
+        self.initialURL = initialURL
+        _tabManager = StateObject(wrappedValue: TabManager(isPrivateContext: isPrivate))
+    }
     @ObservedObject private var downloadManager = DownloadManager.shared
     @ObservedObject private var updateChecker = UpdateChecker.shared
     @State private var isSidebarVisible = false
     @State private var showHistoryPanel = false
     @State private var showDownloadsPanel = false
+    @State private var showFindBar = false
+    @State private var showQuickSwitcher = false
 
     @Namespace private var addressBarNamespace
 
@@ -150,6 +157,24 @@ struct ContentView: View {
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
+            // Click-outside-to-close: transparent, sits below the sidebar
+            // in z-order (so clicks on the sidebar itself still land on it
+            // first) but above everything else, catching any click outside
+            // it while the sidebar is pinned open and collapsing it with
+            // the same animation the sidebar's own toggle button uses.
+            if isSidebarVisible {
+                Rectangle()
+                    .fill(Color.white.opacity(0.001))
+                    .ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(.dashSnappy) {
+                            isSidebarVisible = false
+                        }
+                    }
+                    .zIndex(9)
+            }
+
             // LAYER 2: Sliding Sidebar
             SidebarView(tabManager: tabManager, isVisible: browserSidebarBinding)
                 .offset(x: sidebarOffset)
@@ -171,6 +196,8 @@ struct ContentView: View {
             }
 
             bottomBarLayer
+
+            findBarLayer
 
             downloadShelfLayer
 
@@ -226,11 +253,19 @@ struct ContentView: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 .zIndex(200)
             }
+
+            if showQuickSwitcher {
+                QuickSwitcherView(tabManager: tabManager) {
+                    withAnimation(.dashSnappy) { showQuickSwitcher = false }
+                }
+                .transition(.opacity.combined(with: .scale(scale: 0.97)))
+                .zIndex(300)
+            }
         }
         .background(
             WindowHacker(
                 showNativeButtons: shouldUseNativeButtons,
-                windowAutosaveName: isPrivateWindow ? "ShromePrivateWindow" : "ShromeMainWindow"
+                windowAutosaveName: isPrivateWindow ? "DashPrivateWindow" : "DashMainWindow"
             ) { window in
                 if hostWindow !== window { hostWindow = window }
             }
@@ -312,6 +347,22 @@ struct ContentView: View {
                 tabManager.closeTab(id: tabManager.activeTabId)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionReopenClosedTab"))) { _ in
+            withAnimation(.dashBouncy) {
+                tabManager.reopenLastClosedTab()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionFindInPage"))) { _ in
+            guard !isLandingPage else { return }
+            withAnimation(.dashSnappy) {
+                showFindBar = true
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionQuickSwitcher"))) { _ in
+            withAnimation(.dashSnappy) {
+                showQuickSwitcher = true
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("MenuActionReload"))) { _ in
             tabManager.reloadActiveTab()
         }
@@ -374,6 +425,29 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity)
             .zIndex(5)
+        }
+    }
+
+    @ViewBuilder
+    private var findBarLayer: some View {
+        if showFindBar {
+            VStack {
+                HStack {
+                    Spacer()
+                    FindBarView(
+                        webView: WebViewPool.shared.existingWebView(for: tabManager.activeTabId),
+                        onClose: { withAnimation(.dashSnappy) { showFindBar = false } }
+                    )
+                    .padding(.top, 16)
+                    .padding(.trailing, 16)
+                }
+                Spacer()
+            }
+            // Resets the search field (and stops referencing a stale
+            // WKWebView) whenever the active tab changes.
+            .id(tabManager.activeTabId)
+            .transition(.move(edge: .top).combined(with: .opacity))
+            .zIndex(60)
         }
     }
 

@@ -1,6 +1,6 @@
 //
 //  Theme.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 06/03/2026.
 //
@@ -20,7 +20,7 @@ extension Color {
 // overwrite the starter favorites with its own, different default before
 // they'd ever actually been persisted. Both views now reference this single
 // constant instead of declaring their own.
-enum ShromeDefaults {
+enum DashDefaults {
     static let favoritesJSON: String = """
     [
         {"name": "Apple", "url": "apple.com", "icon": "apple.logo"},
@@ -97,7 +97,7 @@ extension ButtonStyle where Self == BouncyButtonStyle {
     static func bouncy(scale: CGFloat) -> BouncyButtonStyle { BouncyButtonStyle(pressedScale: scale) }
 }
 
-enum ShromeTheme: String, CaseIterable, Identifiable, Codable {
+enum DashTheme: String, CaseIterable, Identifiable, Codable {
     case cosmicPastel   = "Cosmic Pastel"
     case cyberpunkNeon  = "Night City"
     case solarFlare     = "Solar Flare"

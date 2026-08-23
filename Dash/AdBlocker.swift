@@ -1,6 +1,6 @@
 //
 //  AdBlocker.swift
-//  Shrome
+//  Dash
 //
 //  Created by Harsh Shah on 06/03/2026.
 //
@@ -37,7 +37,7 @@ class AdBlocker: ObservableObject {
         """
         
         WKContentRuleListStore.default().compileContentRuleList(
-            forIdentifier: "ShromeDeflectorShields",
+            forIdentifier: "DashDeflectorShields",
             encodedContentRuleList: rulesJSON
         ) { [weak self] list, error in
             DispatchQueue.main.async {
